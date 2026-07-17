@@ -19,7 +19,7 @@ function getR2Client() {
 export async function uploadAsset(key: string, body: Buffer | Uint8Array | string, contentType: string) {
   await getR2Client().send(
     new PutObjectCommand({
-      Bucket: readEnv("R2_BUCKET"),
+      Bucket: readEnv("R2_BUCKET_NAME"),
       Key: key,
       Body: body,
       ContentType: contentType,
@@ -27,5 +27,5 @@ export async function uploadAsset(key: string, body: Buffer | Uint8Array | strin
     })
   );
 
-  return `${readEnv("R2_PUBLIC_BASE_URL").replace(/\/$/, "")}/${key}`;
+  return `${readEnv("R2_PUBLIC_URL").replace(/\/$/, "")}/${key}`;
 }

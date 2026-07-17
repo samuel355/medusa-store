@@ -1,57 +1,34 @@
-# Ember Commerce Fullstack Roadmap
+# SobalShop Fullstack Roadmap
 
-## Build Order
+## Status
 
-1. Storefront experience
-   - Expand the homepage from a simple showcase into a real commerce surface.
-   - Add category entry points, product rails, featured campaigns, social proof, checkout confidence, delivery promises, and app/PWA moments.
-   - Keep the orange-red premium brand direction consistent across desktop and mobile.
+Supabase Postgres (schema `medusastore`) is the commerce data source of truth. MedusaJS (`apps/backend`) was the original candidate but is no longer part of the active path.
 
-2. Product and catalog foundation
-   - Decide whether Medusa owns catalog/order data or whether Supabase owns custom commerce tables.
-   - Model products, variants, collections, prices, inventory, media, and availability.
-   - Connect product cards and rails to live catalog APIs.
+Done:
 
-3. Authentication
-   - Complete Supabase phone OTP sign-in.
-   - Add email/password sign-up and login.
-   - Add Google OAuth callback handling.
-   - Normalize user profiles so phone, email, and Google identities map to one customer record.
+1. Storefront reads real products/categories/hero banners from Postgres (`src/lib/db/products.ts`, `categories.ts`, `hero.ts`). No more static catalog data.
+2. Cart is server-side (`carts`/`cart_items` tables, cookie-identified), not localStorage.
+3. Auth is real Supabase Auth (phone OTP, email/password, Google OAuth) with cookie-based sessions via `@supabase/ssr`, `middleware.ts` route protection, and no demo/bypass accounts.
+4. Checkout computes totals server-side from the real cart before calling Paystack — the client never supplies a price. Paystack webhook idempotently transitions `payments`/`orders` exactly once per payment, verified against replayed webhook deliveries.
+5. Order history, tracking, wishlist, and notification settings all read/write real tables. No mock fallback arrays remain.
+6. Arkesel SMS and Cloudflare R2 storage are wired with real credentials (R2 verified via a live upload; Arkesel wired but not live-tested to avoid sending a real SMS during development).
+7. `/admin` is gated by the `medusastore.admin_users` table and shows real orders (with status/fulfillment update) and products.
+8. BullMQ workers have a boot script (`src/workers/index.ts`, `npm run workers`) with completed/failed logging and graceful shutdown — verified live against real Redis.
+9. Checkout is a dedicated `/checkout` flow with an explicit sign-in-or-guest gate (`AuthPanel` now honors `redirectTo` so login returns the customer to checkout) and native payment UI instead of a full-page redirect: Mobile Money is charged directly via Paystack's Charge API with our own network + phone form (`src/lib/integrations/paystack.ts` `chargeMobileMoney`/`submitChargeOtp`, `/api/paystack/charge`, `/api/paystack/charge/submit-otp`), and card payment uses Paystack InlineJS v2 (`resumeTransaction`) as an on-page popup instead of `checkout.paystack.com`. Order creation is shared between both payment methods via `src/lib/checkout/createPendingOrder.ts`, so totals stay server-computed either way. Verified live against Paystack test-mode keys (Mobile Money `success` path and card `accessCode` issuance both confirmed against the real API and DB).
 
-4. Cart and checkout
-   - Build persistent carts for anonymous and signed-in shoppers.
-   - Add shipping zones, delivery quotes, taxes, promo codes, and order summaries.
-   - Initialize Paystack transactions only after a valid order intent exists.
+Open gaps:
 
-5. Payment webhooks and order lifecycle
-   - Verify Paystack webhooks.
-   - Mark orders paid idempotently.
-   - Push paid orders into BullMQ fulfillment and notification queues.
+1. No customer address book UI (schema has `addresses`, no CRUD yet) — checkout still takes a single free-text delivery address.
+2. No product/inventory management UI in `/admin` (list only).
+3. No automated test suite (unit tests for adapters/signature verification, Playwright coverage).
+4. Discount codes, tax calculation, and multi-address shipping are modeled in the schema but not wired into checkout.
+5. The worker process (`npm run workers`) has to be deployed and kept running separately from the Next.js app — there's no auto-start or process-supervisor config for a specific hosting target yet.
+6. The Mobile Money `send_otp` and `pay_offline` charge branches are implemented per Paystack's documented Charge API contract but only the immediate-`success` test path has been exercised live — real OTP receipt needs a manual pass with a real (or Paystack test) mobile money number.
 
-6. Messaging
-   - Send Arkesel SMS for OTP support, order confirmation, delivery updates, and back-in-stock alerts.
-   - Add retry logic, rate limits, and delivery logging.
+## Next steps
 
-7. Storage and media
-   - Store product media, category art, receipts, and admin uploads in Cloudflare R2.
-   - Add image optimization and cache policies.
-
-8. Performance
-   - Cache catalog reads aggressively.
-   - Use Redis for hot product/category data, rate limits, and queue infrastructure.
-   - Keep initial storefront payload lean and PWA-ready.
-
-9. Admin and operations
-   - Add admin workflows for products, inventory, orders, customers, refunds, and campaigns.
-   - Add worker boot scripts and production process docs.
-
-10. Quality gates
-    - Add unit tests for adapters and payment signature verification.
-    - Add Playwright coverage for homepage, auth, cart, and checkout.
-    - Run typecheck, production build, audit review, and Lighthouse checks before deployment.
-
-## Current Sprint
-
-1. Expand the homepage into a fuller premium storefront.
-2. Keep integration adapters typed and build-safe.
-3. Verify the app still typechecks and builds after each major UI expansion.
+1. Add an address book (CRUD) under `/customers/addresses`, feeding real shipping addresses into checkout instead of a single free-text field.
+2. Add product create/edit and inventory adjustment to `/admin`.
+3. Add unit tests for `src/lib/integrations/paystack.ts` (signature verification, charge helpers) and `src/lib/db/payments.ts` (idempotent transition), plus Playwright coverage for the shop → cart → checkout → webhook flow.
+4. Pick a hosting target for the worker process (e.g. a separate Railway/Render service or Docker container) and add its deploy config.
+5. Manually verify the Mobile Money OTP and pay-offline prompts end-to-end with a real device.

@@ -1,9 +1,8 @@
-import { BadgeCheck, Bell, PackageCheck } from "lucide-react";
+import { Suspense } from "react";
 import { AppHero } from "@/components/store/AppHero";
 import { AppShell } from "@/components/store/AppShell";
-import { confirmations } from "@/lib/store/account";
-
-const icons = [BadgeCheck, Bell, PackageCheck];
+import { ConfirmationCards } from "@/components/storefront/ConfirmationCards";
+import { BadgeCheck, MessageSquareText, Truck } from "lucide-react";
 
 export default function ConfirmationsPage() {
   return (
@@ -14,19 +13,25 @@ export default function ConfirmationsPage() {
         description="Show customers what happened after checkout: payment, SMS, and fulfillment handoff."
       />
 
-      <section className="confirmation-grid">
-        {confirmations.map((confirmation, index) => {
-          const Icon = icons[index];
-          return (
-            <article className="confirmation-card" key={confirmation.reference}>
-              <Icon size={28} />
-              <span>{confirmation.status}</span>
-              <h2>{confirmation.title}</h2>
-              <p>{confirmation.description}</p>
-              <strong>{confirmation.reference}</strong>
-            </article>
-          );
-        })}
+      <Suspense fallback={<section className="dashboard-panel">Loading confirmation...</section>}>
+        <ConfirmationCards />
+      </Suspense>
+      <section className="confirmation-next-steps">
+        <article>
+          <BadgeCheck size={23} />
+          <h2>Payment result</h2>
+          <p>The order record is available immediately so the customer is not left wondering what happened.</p>
+        </article>
+        <article>
+          <MessageSquareText size={23} />
+          <h2>Customer message</h2>
+          <p>Arkesel-ready SMS copy can be triggered for payment confirmation, packing, and delivery movement.</p>
+        </article>
+        <article>
+          <Truck size={23} />
+          <h2>Track next</h2>
+          <p>Send customers straight to tracking after confirmation so they can follow dispatch and ETA.</p>
+        </article>
       </section>
     </AppShell>
   );

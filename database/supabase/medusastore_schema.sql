@@ -1,4 +1,4 @@
--- Ember / MedusaStore Supabase schema
+-- SobalShop / MedusaStore Supabase schema
 -- Paste this entire file into the Supabase SQL Editor.
 -- Schema name: medusastore
 
@@ -766,7 +766,7 @@ select
   ps.inventory_quantity,
   true
 from product_seed ps
-join medusastore.products p on p.slug = ps.slug
+join upsert_products p on p.slug = ps.slug
 on conflict (sku) do update set
   price_amount = excluded.price_amount,
   compare_at_amount = excluded.compare_at_amount,
@@ -841,3 +841,32 @@ drop trigger if exists create_medusastore_customer_after_auth_signup on auth.use
 create trigger create_medusastore_customer_after_auth_signup
 after insert on auth.users
 for each row execute function medusastore.create_customer_for_auth_user();
+
+-- Homepage hero merchandising banners.
+create table if not exists medusastore.hero_banners (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  subtitle text,
+  image_url text,
+  cta_label text,
+  cta_href text,
+  sort_order integer not null default 0,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+drop trigger if exists set_hero_banners_updated_at on medusastore.hero_banners;
+create trigger set_hero_banners_updated_at before update on medusastore.hero_banners
+for each row execute function medusastore.set_updated_at();
+
+alter table medusastore.hero_banners enable row level security;
+
+drop policy if exists "public can read active hero banners" on medusastore.hero_banners;
+create policy "public can read active hero banners"
+on medusastore.hero_banners for select
+using (is_active = true);
+
+drop policy if exists "admins manage hero banners" on medusastore.hero_banners;
+create policy "admins manage hero banners" on medusastore.hero_banners for all
+using (medusastore.is_admin()) with check (medusastore.is_admin());

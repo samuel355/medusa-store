@@ -7,16 +7,25 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "backend:dev": "npm --prefix apps/backend run dev",
+    "backend:build": "npm --prefix apps/backend run build",
+    "backend:start": "npm --prefix apps/backend run start",
+    "backend:seed": "npm --prefix apps/backend run seed",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "workers": "tsx --env-file=.env.local src/workers/index.ts",
+    "workers:dev": "tsx watch --env-file=.env.local src/workers/index.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1088.0",
+    "@paystack/inline-js": "^2.23.1",
+    "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "2.110.6",
     "bullmq": "5.80.5",
     "ioredis": "5.11.1",
     "lucide-react": "1.24.0",
     "next": "16.2.10",
+    "postgres": "^3.4.9",
     "react": "19.2.7",
     "react-dom": "19.2.7"
   },
@@ -24,6 +33,7 @@
     "@types/node": "26.1.1",
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
+    "tsx": "^4.23.1",
     "typescript": "^5.9.3"
   }
 }

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { enqueueOrderPaid } from "@/lib/integrations/queues";
 import { verifyPaystackSignature } from "@/lib/integrations/paystack";
+import { markPaymentPaidIfPending, logPaystackEvent } from "@/lib/db/payments";
+import { getOrderById } from "@/lib/db/orders";
 
 export async function POST(request: Request) {
   const rawBody = await request.text();
@@ -12,11 +14,25 @@ export async function POST(request: Request) {
 
   const event = JSON.parse(rawBody) as {
     event?: string;
-    data?: { metadata?: { orderId?: string; phone?: string } };
+    data?: { reference?: string; channel?: string; metadata?: { orderId?: string } };
   };
 
-  if (event.event === "charge.success" && event.data?.metadata?.orderId) {
-    await enqueueOrderPaid(event.data.metadata.orderId, event.data.metadata.phone);
+  const reference = event.data?.reference;
+
+  if (event.event === "charge.success" && reference) {
+    const payment = await markPaymentPaidIfPending(reference, event.data?.channel);
+
+    await logPaystackEvent({
+      event: event.event,
+      reference,
+      orderId: payment?.order_id ?? event.data?.metadata?.orderId,
+      payload: event,
+    });
+
+    if (payment?.order_id) {
+      const order = await getOrderById(payment.order_id);
+      await enqueueOrderPaid(payment.order_id, order?.phone || undefined);
+    }
   }
 
   return NextResponse.json({ received: true });

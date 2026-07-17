@@ -1,6 +1,6 @@
 {
-  "name": "Ember Commerce",
-  "short_name": "Ember",
+  "name": "SobalShop",
+  "short_name": "SobalShop",
   "description": "Premium fast commerce storefront.",
   "start_url": "/",
   "display": "standalone",

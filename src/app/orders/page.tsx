@@ -1,7 +1,7 @@
-import { CreditCard, PackageCheck, Truck } from "lucide-react";
 import { AppHero } from "@/components/store/AppHero";
 import { AppShell } from "@/components/store/AppShell";
-import { orders } from "@/lib/store/account";
+import { OrdersPageClient } from "@/components/storefront/OrdersPageClient";
+import { Bell, PackageCheck, Truck } from "lucide-react";
 
 export default function OrdersPage() {
   return (
@@ -12,29 +12,23 @@ export default function OrdersPage() {
         description="Track paid, processing, delivered, and pending orders from one customer workspace."
       />
 
-      <section className="orders-table">
-        {orders.map((order) => (
-          <article key={order.id}>
-            <div>
-              <strong>{order.id}</strong>
-              <span>{order.date}</span>
-            </div>
-            <div>
-              <PackageCheck size={18} />
-              <span>{order.items}</span>
-            </div>
-            <div>
-              <Truck size={18} />
-              <span>{order.status}</span>
-            </div>
-            <div>
-              <CreditCard size={18} />
-              <span>{order.payment}</span>
-            </div>
-            <b>{order.total}</b>
-            <a href={`/tracking?order=${order.id}`}>Track</a>
-          </article>
-        ))}
+      <OrdersPageClient />
+      <section className="order-explainer-grid">
+        <article>
+          <PackageCheck size={22} />
+          <strong>Processing</strong>
+          <span>Items are reserved, packed, and prepared for courier handoff.</span>
+        </article>
+        <article>
+          <Truck size={22} />
+          <strong>Dispatch</strong>
+          <span>Accra orders can move to same-day delivery while nationwide orders use courier dispatch.</span>
+        </article>
+        <article>
+          <Bell size={22} />
+          <strong>Updates</strong>
+          <span>SMS and confirmation events are structured for Arkesel notification workflows.</span>
+        </article>
       </section>
     </AppShell>
   );

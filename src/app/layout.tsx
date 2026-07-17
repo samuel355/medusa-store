@@ -2,19 +2,19 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Ember Commerce",
-  description: "A fast premium commerce storefront with phone-first auth and modern checkout.",
-  applicationName: "Ember Commerce",
+  title: "SobalShop",
+  description: "A premium Ghana-ready fashion storefront with Mobile Money checkout and transactional order updates.",
+  applicationName: "SobalShop",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Ember"
+    title: "SobalShop"
   }
 };
 
 export const viewport: Viewport = {
-  themeColor: "#d93618",
+  themeColor: "#ff6a00",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover"

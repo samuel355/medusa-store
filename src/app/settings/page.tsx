@@ -1,9 +1,7 @@
-import { Bell, CreditCard, ShieldCheck } from "lucide-react";
 import { AppHero } from "@/components/store/AppHero";
 import { AppShell } from "@/components/store/AppShell";
-import { settingsGroups } from "@/lib/store/account";
-
-const icons = [ShieldCheck, Bell, CreditCard];
+import { SettingsControls } from "@/components/storefront/SettingsControls";
+import { Bell, CreditCard, MapPin } from "lucide-react";
 
 export default function SettingsPage() {
   return (
@@ -14,24 +12,23 @@ export default function SettingsPage() {
         description="Manage account access, notifications, saved delivery details, and checkout defaults."
       />
 
-      <section className="settings-grid">
-        {settingsGroups.map((group, index) => {
-          const Icon = icons[index];
-          return (
-            <article className="dashboard-panel" key={group.title}>
-              <Icon size={24} />
-              <h2>{group.title}</h2>
-              <div className="setting-list">
-                {group.items.map((item) => (
-                  <label key={item}>
-                    <span>{item}</span>
-                    <input type="checkbox" defaultChecked />
-                  </label>
-                ))}
-              </div>
-            </article>
-          );
-        })}
+      <SettingsControls />
+      <section className="settings-context-grid">
+        <article>
+          <Bell size={22} />
+          <strong>Notification control</strong>
+          <span>Choose how order confirmations, delivery updates, and back-in-stock alerts should reach you.</span>
+        </article>
+        <article>
+          <CreditCard size={22} />
+          <strong>Payment defaults</strong>
+          <span>Keep preferred Paystack channels visible for faster future checkout.</span>
+        </article>
+        <article>
+          <MapPin size={22} />
+          <strong>Delivery defaults</strong>
+          <span>Save the delivery context shoppers expect to reuse for repeat purchases.</span>
+        </article>
       </section>
     </AppShell>
   );

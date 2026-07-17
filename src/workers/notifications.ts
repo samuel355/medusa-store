@@ -14,9 +14,17 @@ export const notificationWorker = new Worker(
     if (job.name === "sms.order_paid") {
       await sendSms({
         to: job.data.phone,
-        message: `Your Ember order ${job.data.orderId} has been paid. We will send delivery updates shortly.`
+        message: `Your SobalShop order ${job.data.orderId} has been paid. We will send delivery updates shortly.`
       });
     }
   },
   { connection }
 );
+
+notificationWorker.on("completed", (job) => {
+  console.log(`[notifications] job ${job.id} (${job.name}) completed`);
+});
+
+notificationWorker.on("failed", (job, error) => {
+  console.error(`[notifications] job ${job?.id} (${job?.name}) failed`, error);
+});
