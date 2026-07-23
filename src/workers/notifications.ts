@@ -14,7 +14,7 @@ export const notificationWorker = new Worker(
     if (job.name === "sms.order_paid") {
       await sendSms({
         to: job.data.phone,
-        message: `Your SobalShop order ${job.data.orderId} has been paid. We will send delivery updates shortly.`
+        message: `Your Begnon order ${job.data.orderId} has been paid. We will send delivery updates shortly.`
       });
     }
   },

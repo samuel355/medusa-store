@@ -1,4 +1,4 @@
-const CACHE_NAME = "ember-commerce-v1";
+const CACHE_NAME = "begnon-store-v1";
 const SHELL_ASSETS = ["/", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {

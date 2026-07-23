@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getActiveCart, getCartWithItems, addCartItem, updateCartItemQuantity, removeCartItem } from "@/lib/db/cart";
-import { resolveCustomerId } from "@/lib/auth/session";
+import { hasAuthSessionCookie, resolveCustomerId } from "@/lib/auth/session";
 
-const CART_COOKIE = "sobalshop_cart_id";
+const CART_COOKIE = "begnon_cart_id";
 const CART_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
 
 async function readCartId() {
@@ -23,7 +23,7 @@ async function withCartCookie(cartId: string) {
 
 export async function GET() {
   const cartId = await readCartId();
-  const customerId = await resolveCustomerId();
+  const customerId = (await hasAuthSessionCookie()) ? await resolveCustomerId() : undefined;
 
   if (!cartId && !customerId) {
     return NextResponse.json({ id: null, items: [], totals: { quantity: 0, subtotal: 0, shipping: 0, total: 0 } });
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
   }
 
   const cartId = await readCartId();
-  const customerId = await resolveCustomerId();
+  const customerId = (await hasAuthSessionCookie()) ? await resolveCustomerId() : undefined;
   const resolvedCartId = await getActiveCart(cartId, customerId);
 
   await addCartItem(resolvedCartId, body.variantId, body.quantity ?? 1);

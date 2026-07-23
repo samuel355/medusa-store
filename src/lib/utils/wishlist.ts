@@ -7,7 +7,7 @@ export type WishlistItem = {
   category: string;
 };
 
-export const WISHLIST_UPDATED_EVENT = "sobalshop:wishlist-updated";
+export const WISHLIST_UPDATED_EVENT = "begnon:wishlist-updated";
 
 export async function fetchWishlist(): Promise<WishlistItem[]> {
   try {

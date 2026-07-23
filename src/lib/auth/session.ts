@@ -1,12 +1,19 @@
 import { createServerSupabaseClient } from "@/lib/integrations/supabase";
 import { getCustomerByAuthUserId, isAdminAuthUser as isAdminAuthUserId } from "@/lib/db/customers";
+import { cookies } from "next/headers";
 
 function supabaseConfigured() {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 }
 
+export async function hasAuthSessionCookie() {
+  const cookieStore = await cookies();
+  return cookieStore.getAll().some(({ name }) => name.startsWith("sb-") && name.includes("-auth-token"));
+}
+
 export async function getAuthUser() {
   if (!supabaseConfigured()) return null;
+  if (!(await hasAuthSessionCookie())) return null;
 
   const supabase = await createServerSupabaseClient();
   const {

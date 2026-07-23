@@ -78,7 +78,7 @@ const DashboardRoute = () => {
           <div className="relative flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
             <div>
               <Badge className="mb-3 border-orange-200 bg-orange-50 text-orange-700">
-                SobalShop admin
+                Begnon admin
               </Badge>
               <Heading level="h1" className="text-2xl font-semibold text-stone-950">
                 Fashion commerce dashboard

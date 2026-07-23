@@ -10,7 +10,7 @@ export default function TrackingPage() {
       <AppHero
         kicker="Tracking"
         title="Track your order."
-        description="Follow payment, packing, dispatch, and delivery updates for your SobalShop order."
+        description="Follow payment, packing, dispatch, and delivery updates for your Begnon order."
         className="tracking-hero"
         aside={
           <div className="profile-card">

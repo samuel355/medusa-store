@@ -1,16 +1,18 @@
-import { Clock, Flame, Mail, MapPin, Phone, ShieldCheck, Smartphone, Truck } from "lucide-react";
+import { Clock, Mail, MapPin, Phone, ShieldCheck, Smartphone, Truck } from "lucide-react";
+import Link from "next/link";
 import { storeBrand } from "@/lib/store/brand";
+import { BrandMark } from "@/components/store/BrandMark";
 
 export function StoreFooter() {
   return (
     <footer className="store-footer">
       <div className="footer-topline">
-        <a className="brand" href="/">
+        <Link className="brand" href="/">
           <span className="brand-mark">
-            <Flame size={18} />
+            <BrandMark size={30} />
           </span>
           {storeBrand.name}
-        </a>
+        </Link>
         <div className="footer-trust-row" aria-label="Store promises">
           <span>
             <Smartphone size={16} /> Mobile Money first

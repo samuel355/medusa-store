@@ -1,4 +1,5 @@
 import { Bell, Heart, PackageCheck } from "lucide-react";
+import Image from "next/image";
 import { Suspense } from "react";
 import { AppHero } from "@/components/store/AppHero";
 import { AppShell } from "@/components/store/AppShell";
@@ -9,8 +10,17 @@ export default function RegisterPage() {
     <AppShell className="app-page auth-page">
       <AppHero
         kicker="Register"
-        title="Create your SobalShop account."
+        title="Create your Begnon account."
         description="Sign up with email, phone, or Google for faster checkout, saved addresses, wishlist, and order tracking."
+        aside={
+          <Image
+            src="/logos/Begon-logo-v.png"
+            alt="Begnon — Style, Quality, Delivered"
+            width={220}
+            height={194}
+            className="auth-logo-lockup"
+          />
+        }
       />
       <Suspense fallback={null}>
         <AuthPanel initialMode="signup" />

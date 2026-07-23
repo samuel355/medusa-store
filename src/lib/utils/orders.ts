@@ -20,7 +20,7 @@ export type OrderDetail = OrderSummary & {
   items: { title: string; sku: string; quantity: number; unitPrice: number; lineTotal: number }[];
 };
 
-export const ORDERS_UPDATED_EVENT = "sobalshop:orders-updated";
+export const ORDERS_UPDATED_EVENT = "begnon:orders-updated";
 
 export async function fetchOrders(): Promise<OrderSummary[]> {
   try {
@@ -57,7 +57,7 @@ export async function reorder(orderNumber: string): Promise<boolean> {
   try {
     const response = await fetch(`/api/orders/${encodeURIComponent(orderNumber)}/reorder`, { method: "POST" });
     if (response.ok) {
-      window.dispatchEvent(new CustomEvent("sobalshop:cart-updated"));
+      window.dispatchEvent(new CustomEvent("begnon:cart-updated"));
     }
     return response.ok;
   } catch {

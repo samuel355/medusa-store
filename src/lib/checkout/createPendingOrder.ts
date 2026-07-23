@@ -23,7 +23,7 @@ export async function createPendingOrder(input: CreatePendingOrderInput): Promis
   }
 
   const cookieStore = await cookies();
-  const cartId = cookieStore.get("sobalshop_cart_id")?.value;
+  const cartId = cookieStore.get("begnon_cart_id")?.value;
   const customerId = await resolveCustomerId();
 
   if (!cartId) {

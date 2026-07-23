@@ -1,5 +1,4 @@
-import { createServerSupabaseClient } from "@/lib/integrations/supabase";
-import { isAdminAuthUser } from "@/lib/db/customers";
+import { getAuthUser, isAdminAuthUser } from "@/lib/auth/session";
 import { StoreHeaderClient } from "@/components/store/StoreHeaderClient";
 
 export async function StoreHeader() {
@@ -7,10 +6,7 @@ export async function StoreHeader() {
   let isAdmin = false;
 
   if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getAuthUser();
 
     isSignedIn = Boolean(user);
     isAdmin = user ? await isAdminAuthUser(user.id) : false;

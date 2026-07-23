@@ -13,7 +13,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ or
   }
 
   const cookieStore = await cookies();
-  const cartId = cookieStore.get("sobalshop_cart_id")?.value;
+  const cartId = cookieStore.get("begnon_cart_id")?.value;
   const customerId = await resolveCustomerId();
   const resolvedCartId = await getActiveCart(cartId, customerId);
 
@@ -24,7 +24,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ or
     }
   }
 
-  cookieStore.set("sobalshop_cart_id", resolvedCartId, {
+  cookieStore.set("begnon_cart_id", resolvedCartId, {
     httpOnly: true,
     sameSite: "lax",
     path: "/",

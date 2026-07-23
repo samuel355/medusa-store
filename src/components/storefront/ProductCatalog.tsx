@@ -3,7 +3,7 @@
 import { BadgeCheck, Bell, Heart, PackageCheck, Search, ShoppingBag, SlidersHorizontal, Star, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { type StoreProduct } from "@/lib/db/products";
-import { addToCart as addVariantToCart } from "@/lib/utils/cart";
+import { useCart } from "@/lib/medusa/cart";
 import { formatMoney } from "@/lib/utils/money";
 import { fetchWishlist, toggleWishlistItem } from "@/lib/utils/wishlist";
 
@@ -35,6 +35,7 @@ function getSwatchColor(colorName: string) {
 }
 
 export function ProductCatalog({ departments, products: catalogProducts }: ProductCatalogProps) {
+  const { addToCart: addVariantToCart, error: cartError } = useCart();
   const [category, setCategory] = useState("All categories");
   const [delivery, setDelivery] = useState("Any delivery speed");
   const [payment, setPayment] = useState("Paystack enabled");
@@ -60,7 +61,7 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
     const params = new URLSearchParams(window.location.search);
     const categoryParam = params.get("category");
     const queryParam = params.get("q");
-    const storedQuery = window.localStorage.getItem("sobalshop_search");
+    const storedQuery = window.localStorage.getItem("begnon_search");
     if (categoryParam && departments.includes(categoryParam)) {
       setCategory(categoryParam);
     }
@@ -68,7 +69,7 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
       setQuery(queryParam);
     } else if (storedQuery) {
       setQuery(storedQuery);
-      window.localStorage.removeItem("sobalshop_search");
+      window.localStorage.removeItem("begnon_search");
     }
     fetchWishlist().then((items) => setSaved(items.map((item) => item.productId)));
   }, [departments]);
@@ -205,8 +206,12 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
   async function addToCart(product: StoreProduct) {
     const defaultSize = product.sizes[0];
     const defaultColor = product.colors[0];
-    await addVariantToCart(product.variantId, 1);
-    setNotice(`${product.name} added to cart${defaultSize || defaultColor ? ` (${[defaultSize, defaultColor].filter(Boolean).join(" / ")})` : ""}.`);
+    try {
+      await addVariantToCart(product.variantId, 1);
+      setNotice(`${product.name} added to cart${defaultSize || defaultColor ? ` (${[defaultSize, defaultColor].filter(Boolean).join(" / ")})` : ""}.`);
+    } catch {
+      // The shared provider exposes the mutation error in the visible alert.
+    }
   }
 
   function resetFilters() {
@@ -438,7 +443,7 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
           </div>
           <div className="filter-checks">
             <span>
-              <BadgeCheck size={16} /> SobalShop verified
+              <BadgeCheck size={16} /> Begnon verified
             </span>
             <span>
               <PackageCheck size={16} /> {delivery}
@@ -528,6 +533,7 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
           })}
         </div>
       </div>
+      {cartError ? <p className="inline-notice" role="alert">{cartError.message}</p> : null}
       {!paginatedProducts.length ? (
         <div className="dashboard-panel empty-results">
           <h2>No products match those filters.</h2>

@@ -1,4 +1,5 @@
 import { Bell, Heart, PackageCheck } from "lucide-react";
+import Image from "next/image";
 import { Suspense } from "react";
 import { AppHero } from "@/components/store/AppHero";
 import { AppShell } from "@/components/store/AppShell";
@@ -11,6 +12,15 @@ export default function LoginPage() {
         kicker="Login"
         title="Access your fashion account."
         description="Continue with phone OTP, email password, or Google to manage orders, wishlist, addresses, and returns."
+        aside={
+          <Image
+            src="/logos/Begon-logo-v.png"
+            alt="Begnon — Style, Quality, Delivered"
+            width={220}
+            height={194}
+            className="auth-logo-lockup"
+          />
+        }
       />
       <Suspense fallback={null}>
         <AuthPanel initialMode="login" />

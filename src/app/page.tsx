@@ -16,7 +16,7 @@ import {
   Truck,
 } from "lucide-react";
 import { AppShell } from "@/components/store/AppShell";
-import { getActiveProducts, getFlashDeals, type StoreProduct } from "@/lib/db/products";
+import { getActiveProducts, type StoreProduct } from "@/lib/db/products";
 import { getActiveCategories, type StoreCategory } from "@/lib/db/categories";
 import { getActiveHeroBanners } from "@/lib/db/hero";
 import { formatMoney } from "@/lib/utils/money";
@@ -45,11 +45,10 @@ function categoryProductCount(category: StoreCategory, products: StoreProduct[])
 }
 
 export default async function Home() {
-  const [products, categories, heroBanners, dealProducts] = await Promise.all([
+  const [products, categories, heroBanners] = await Promise.all([
     getActiveProducts(),
     getActiveCategories(),
     getActiveHeroBanners(),
-    getFlashDeals(4),
   ]);
 
   const featuredProducts = products.slice(0, 8);
@@ -57,12 +56,13 @@ export default async function Home() {
   const trendingProducts = [...products]
     .sort((a, b) => b.popularity - a.popularity)
     .slice(0, 6);
+  const dealProducts = products.filter((product) => product.discountEligible).slice(0, 4);
 
   const slides =
     heroBanners.length > 0
       ? heroBanners.map((banner) => ({
           key: banner.id,
-          eyebrow: banner.subtitle || "SobalShop",
+          eyebrow: banner.subtitle || "Begnon",
           title: banner.title,
           cta: banner.ctaLabel || "Shop now",
           href: banner.ctaHref,
@@ -190,7 +190,7 @@ export default async function Home() {
       <section className="market-section trust-strip">
         <div className="market-section-head">
           <div>
-            <p className="kicker">Why SobalShop</p>
+            <p className="kicker">Why Begnon</p>
             <h2>Built for fast, trustworthy checkout.</h2>
           </div>
         </div>

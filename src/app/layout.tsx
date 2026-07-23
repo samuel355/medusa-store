@@ -2,19 +2,19 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SobalShop",
+  title: "Begnon — Style, Quality, Delivered",
   description: "A premium Ghana-ready fashion storefront with Mobile Money checkout and transactional order updates.",
-  applicationName: "SobalShop",
+  applicationName: "Begnon",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "SobalShop"
+    title: "Begnon"
   }
 };
 
 export const viewport: Viewport = {
-  themeColor: "#ff6a00",
+  themeColor: "#f4752c",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover"

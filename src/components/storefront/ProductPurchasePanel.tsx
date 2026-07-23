@@ -3,7 +3,7 @@
 import { CheckCircle2, Minus, Plus, ShoppingBag, Zap } from "lucide-react";
 import { useState } from "react";
 import { type StoreProduct } from "@/lib/db/products";
-import { addToCart } from "@/lib/utils/cart";
+import { useCart } from "@/lib/medusa/cart";
 import { formatMoney } from "@/lib/utils/money";
 
 export function ProductPurchasePanel({
@@ -18,6 +18,7 @@ export function ProductPurchasePanel({
   const [color, setColor] = useState(product.colors[0] ?? "");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { addToCart, error: cartError } = useCart();
 
   async function addItems() {
     setIsSubmitting(true);
@@ -25,6 +26,8 @@ export function ProductPurchasePanel({
       await addToCart(product.variantId, quantity);
       const variant = [size, color].filter(Boolean).join(" / ");
       setMessage(`${quantity} item(s) added${variant ? `: ${variant}` : "."}`);
+    } catch {
+      // The shared provider exposes the mutation error in the visible alert.
     } finally {
       setIsSubmitting(false);
     }
@@ -35,6 +38,8 @@ export function ProductPurchasePanel({
     try {
       await addToCart(product.variantId, quantity);
       window.location.href = "/cart";
+    } catch {
+      // The shared provider exposes the mutation error in the visible alert.
     } finally {
       setIsSubmitting(false);
     }
@@ -100,6 +105,7 @@ export function ProductPurchasePanel({
           {message} <a href="/cart">View cart</a>
         </p>
       ) : null}
+      {cartError ? <p className="inline-notice" role="alert">{cartError.message}</p> : null}
     </div>
   );
 }

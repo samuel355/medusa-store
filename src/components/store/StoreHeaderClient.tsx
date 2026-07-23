@@ -1,9 +1,11 @@
 "use client";
 
-import { Flame, Grid3X3, Heart, ListFilter, Search, ShoppingBag, UserRound, X } from "lucide-react";
-import { FormEvent, useEffect, useState } from "react";
+import { Grid3X3, Heart, ListFilter, Search, ShoppingBag, UserRound, X } from "lucide-react";
+import Link from "next/link";
+import { FormEvent, useState } from "react";
 import { storeBrand } from "@/lib/store/brand";
-import { CART_UPDATED_EVENT, fetchCart } from "@/lib/utils/cart";
+import { BrandMark } from "@/components/store/BrandMark";
+import { useCart } from "@/lib/medusa/cart";
 
 type StoreHeaderClientProps = {
   isSignedIn: boolean;
@@ -12,25 +14,14 @@ type StoreHeaderClientProps = {
 };
 
 export function StoreHeaderClient({ isSignedIn, isAdmin, accountHref }: StoreHeaderClientProps) {
-  const [cartCount, setCartCount] = useState(0);
+  const { cart } = useCart();
+  const cartCount = cart.totals.quantity;
   const [query, setQuery] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  useEffect(() => {
-    function syncCart() {
-      fetchCart().then((cart) => setCartCount(cart.totals.quantity));
-    }
-
-    syncCart();
-    window.addEventListener(CART_UPDATED_EVENT, syncCart);
-    return () => {
-      window.removeEventListener(CART_UPDATED_EVENT, syncCart);
-    };
-  }, []);
-
   function search(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    window.localStorage.setItem("sobalshop_search", query);
+    window.localStorage.setItem("begnon_search", query);
     window.location.href = "/shop";
   }
 
@@ -48,12 +39,12 @@ export function StoreHeaderClient({ isSignedIn, isAdmin, accountHref }: StoreHea
   return (
     <header className="market-header">
       <div className="market-top">
-        <a className="brand" href="/">
+        <Link className="brand" href="/">
           <span className="brand-mark">
-            <Flame size={18} />
+            <BrandMark size={30} />
           </span>
           {storeBrand.name}
-        </a>
+        </Link>
         <form className="market-search" role="search" onSubmit={search}>
           <button>Shop</button>
           <input

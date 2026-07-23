@@ -1,51 +1,37 @@
 "use client";
 
 import { ArrowRight, CreditCard, Minus, PackageCheck, Plus, ShieldCheck, ShoppingBag, Trash2, Truck } from "lucide-react";
-import { useEffect, useState } from "react";
-import {
-  CART_UPDATED_EVENT,
-  type CartItem,
-  fetchCart,
-  removeCartItem,
-  updateCartItemQuantity,
-} from "@/lib/utils/cart";
+import type { CartItem } from "@/lib/utils/cart";
+import { useCart } from "@/lib/medusa/cart";
 import { formatMoney } from "@/lib/utils/money";
 
-const EMPTY_TOTALS = { quantity: 0, subtotal: 0, shipping: 0, total: 0 };
-
 export function CartPageClient() {
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [totals, setTotals] = useState(EMPTY_TOTALS);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    function syncCart() {
-      fetchCart().then((response) => {
-        setCart(response.items);
-        setTotals(response.totals);
-        setIsLoading(false);
-      });
-    }
-
-    syncCart();
-    window.addEventListener(CART_UPDATED_EVENT, syncCart);
-    return () => window.removeEventListener(CART_UPDATED_EVENT, syncCart);
-  }, []);
+  const { cart: response, isLoading, isMutating, error, removeCartItem, updateCartItemQuantity } = useCart();
+  const cart = response.items;
+  const totals = response.totals;
 
   async function updateQuantity(item: CartItem, quantity: number) {
-    const response = await updateCartItemQuantity(item.id, quantity);
-    setCart(response.items);
-    setTotals(response.totals);
+    try {
+      await updateCartItemQuantity(item.id, quantity);
+    } catch {
+      // The shared provider exposes the mutation error in the visible alert.
+    }
   }
 
   async function removeItem(item: CartItem) {
-    const response = await removeCartItem(item.id);
-    setCart(response.items);
-    setTotals(response.totals);
+    try {
+      await removeCartItem(item.id);
+    } catch {
+      // The shared provider exposes the mutation error in the visible alert.
+    }
   }
 
   if (isLoading) {
-    return null;
+    return <section className="dashboard-panel cart-empty"><p>Loading your cart…</p></section>;
+  }
+
+  if (error && !cart.length) {
+    return <section className="dashboard-panel cart-empty"><h2>We couldn&apos;t load your cart.</h2><p>{error.message}</p></section>;
   }
 
   if (!cart.length) {
@@ -64,6 +50,7 @@ export function CartPageClient() {
   return (
     <section className="cart-layout">
       <div className="cart-items">
+        {error ? <p className="inline-notice" role="alert">{error.message}</p> : null}
         {cart.map((item) => (
           <article className="cart-row" key={item.id}>
             <a className="cart-row-image" href={`/products/${item.slug}`}>
@@ -81,16 +68,16 @@ export function CartPageClient() {
               ) : null}
             </div>
             <div className="quantity-stepper">
-              <button aria-label="Decrease quantity" onClick={() => updateQuantity(item, item.quantity - 1)}>
+              <button disabled={isMutating} aria-label="Decrease quantity" onClick={() => updateQuantity(item, item.quantity - 1)}>
                 <Minus size={16} />
               </button>
               <strong>{item.quantity}</strong>
-              <button aria-label="Increase quantity" onClick={() => updateQuantity(item, item.quantity + 1)}>
+              <button disabled={isMutating} aria-label="Increase quantity" onClick={() => updateQuantity(item, item.quantity + 1)}>
                 <Plus size={16} />
               </button>
             </div>
             <strong>{formatMoney(item.lineTotal)}</strong>
-            <button className="icon-button" aria-label={`Remove ${item.name}`} onClick={() => removeItem(item)}>
+            <button disabled={isMutating} className="icon-button" aria-label={`Remove ${item.name}`} onClick={() => removeItem(item)}>
               <Trash2 size={17} />
             </button>
           </article>

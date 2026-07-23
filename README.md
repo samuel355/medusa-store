@@ -1,4 +1,4 @@
-# SobalShop
+# Begnon
 
 Modern ecommerce storefront with a premium PWA UI, backed by:
 

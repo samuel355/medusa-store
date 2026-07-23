@@ -127,7 +127,7 @@ const products = [
     fabric: "Cotton poplin",
     gender: "Men",
     occasion: ["Work", "Church"],
-    brand: "Sobal Atelier",
+    brand: "Begnon Atelier",
     discountEligible: true,
     weight: 420,
     image:
@@ -169,15 +169,15 @@ export default async function initial_data_seed({
     ModuleRegistrationName.FULFILLMENT
   );
 
-  logger.info("Seeding SobalShop sales channel and publishable key...");
+  logger.info("Seeding Begnon sales channel and publishable key...");
   const {
     result: [defaultSalesChannel],
   } = await createSalesChannelsWorkflow(container).run({
     input: {
       salesChannelsData: [
         {
-          name: "SobalShop Storefront",
-          description: "Primary SobalShop online storefront.",
+          name: "Begnon Storefront",
+          description: "Primary Begnon online storefront.",
         },
       ],
     },
@@ -189,7 +189,7 @@ export default async function initial_data_seed({
     input: {
       api_keys: [
         {
-          title: "SobalShop Storefront Publishable Key",
+          title: "Begnon Storefront Publishable Key",
           type: "publishable",
           created_by: "",
         },
@@ -204,12 +204,12 @@ export default async function initial_data_seed({
     },
   });
 
-  logger.info("Seeding SobalShop store, Ghana region, tax, and shipping...");
+  logger.info("Seeding Begnon store, Ghana region, tax, and shipping...");
   await createStoresWorkflow(container).run({
     input: {
       stores: [
         {
-          name: "SobalShop",
+          name: "Begnon",
           supported_currencies: [
             {
               currency_code: "ghs",
@@ -293,7 +293,7 @@ export default async function initial_data_seed({
     input: {
       data: [
         {
-          name: "SobalShop standard shipping",
+          name: "Begnon standard shipping",
           type: "default",
         },
       ],
@@ -301,7 +301,7 @@ export default async function initial_data_seed({
   });
 
   const fulfillmentSet = await fulfillmentModuleService.createFulfillmentSets({
-    name: "SobalShop Ghana delivery",
+    name: "Begnon Ghana delivery",
     type: "shipping",
     service_zones: [
       {
@@ -418,7 +418,7 @@ export default async function initial_data_seed({
     });
   }
 
-  logger.info("Seeding SobalShop catalog...");
+  logger.info("Seeding Begnon catalog...");
   const storefrontCategories = [
     "Men",
     "Women",
@@ -563,6 +563,6 @@ export default async function initial_data_seed({
   });
 
   logger.info(
-    `SobalShop seed complete. Publishable key: ${publishableApiKey.token}`
+    `Begnon seed complete. Publishable key: ${publishableApiKey.token}`
   );
 }

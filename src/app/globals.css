@@ -79,10 +79,12 @@ main {
 .brand-mark {
   width: 38px;
   height: 38px;
-  border: 1px solid rgba(255, 211, 138, 0.3);
-  border-radius: 8px;
-  background: linear-gradient(145deg, #ff4b1f, #8a1d13);
-  box-shadow: 0 10px 28px rgba(255, 75, 31, 0.34);
+}
+
+.brand-mark-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .navlinks {
@@ -226,7 +228,7 @@ h3 {
 .pay-button {
   gap: 0.55rem;
   border: 0;
-  background: linear-gradient(135deg, #ff6a2a, #d93618 54%, #8f1712);
+  background: linear-gradient(135deg, #f89a5c, #de5f1c 54%, #7a2f0d);
   color: #fffaf1;
   box-shadow: 0 16px 42px rgba(255, 75, 31, 0.35);
 }
@@ -349,7 +351,7 @@ h3 {
   border-radius: 22px;
   background:
     linear-gradient(115deg, transparent 0 35%, rgba(255, 255, 255, 0.22) 36% 42%, transparent 43%),
-    linear-gradient(160deg, #ff8a3d, #d93618 44%, #4a100b);
+    linear-gradient(160deg, #ff8a3d, #de5f1c 44%, #4a100b);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34), 0 28px 58px rgba(0, 0, 0, 0.48);
 }
 
@@ -454,7 +456,7 @@ h3 {
   padding: 1.1rem;
   background:
     linear-gradient(180deg, rgba(20, 8, 6, 0.1), rgba(20, 8, 6, 0.74)),
-    linear-gradient(145deg, #43140d, #d93618 52%, #ffaf5c);
+    linear-gradient(145deg, #43140d, #de5f1c 52%, #ffaf5c);
   box-shadow: var(--shadow);
   overflow: hidden;
 }
@@ -474,13 +476,13 @@ h3 {
 .category-2 {
   background:
     linear-gradient(180deg, rgba(20, 8, 6, 0.1), rgba(20, 8, 6, 0.76)),
-    linear-gradient(145deg, #1b0b08, #8f1712 50%, #f97316);
+    linear-gradient(145deg, #1b0b08, #7a2f0d 50%, #f4752c);
 }
 
 .category-3 {
   background:
     linear-gradient(180deg, rgba(20, 8, 6, 0.08), rgba(20, 8, 6, 0.78)),
-    linear-gradient(145deg, #220d09, #b92d17 48%, #ffd38a);
+    linear-gradient(145deg, #220d09, #b84a16 48%, #ffd38a);
 }
 
 .category-tile > span {
@@ -543,7 +545,7 @@ h3 {
   min-height: 280px;
   background:
     radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.32), transparent 8rem),
-    linear-gradient(145deg, #572016, #d93618 54%, #ffb05c);
+    linear-gradient(145deg, #7a2f0d, #de5f1c 54%, #ffb05c);
 }
 
 .product-art::after {
@@ -563,19 +565,19 @@ h3 {
 .art-2 {
   background:
     radial-gradient(circle at 65% 22%, rgba(255, 211, 138, 0.4), transparent 8rem),
-    linear-gradient(145deg, #32120e, #9a2617 52%, #f97316);
+    linear-gradient(145deg, #32120e, #7a2f0d 52%, #f4752c);
 }
 
 .art-3 {
   background:
     radial-gradient(circle at 28% 18%, rgba(255, 229, 194, 0.36), transparent 8rem),
-    linear-gradient(145deg, #441309, #c03a1c 55%, #ffd38a);
+    linear-gradient(145deg, #441309, #b84a16 55%, #ffd38a);
 }
 
 .art-4 {
   background:
     radial-gradient(circle at 65% 26%, rgba(255, 255, 255, 0.28), transparent 8rem),
-    linear-gradient(145deg, #210d0a, #b22a18 48%, #ff6a2a);
+    linear-gradient(145deg, #210d0a, #b84a16 48%, #f89a5c);
 }
 
 .product-art span {
@@ -694,19 +696,19 @@ h3 {
   border-radius: 8px;
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.24), transparent 38%),
-    linear-gradient(145deg, #ff7a2b, #9f2114);
+    linear-gradient(145deg, #f4752c, #9f2114);
 }
 
 .mini-2 {
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.2), transparent 38%),
-    linear-gradient(145deg, #42120d, #d93618 60%, #ffd38a);
+    linear-gradient(145deg, #42120d, #de5f1c 60%, #ffd38a);
 }
 
 .mini-3 {
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.18), transparent 38%),
-    linear-gradient(145deg, #170906, #8f1712 55%, #f97316);
+    linear-gradient(145deg, #170906, #7a2f0d 55%, #f4752c);
 }
 
 .mini-product span {
@@ -1334,7 +1336,7 @@ textarea:focus {
 
 .market-search button:last-child {
   min-width: 118px;
-  background: linear-gradient(135deg, #ff6a2a, #d93618);
+  background: linear-gradient(135deg, #f89a5c, #de5f1c);
   color: #fffaf1;
 }
 
@@ -1658,20 +1660,20 @@ textarea:focus {
 .deal-art {
   height: 112px;
   border-radius: 7px;
-  background: linear-gradient(145deg, #ff7a2b, #8f1712);
+  background: linear-gradient(145deg, #f4752c, #7a2f0d);
   overflow: hidden;
 }
 
 .deal-2 {
-  background: linear-gradient(145deg, #ffd38a, #c03a1c);
+  background: linear-gradient(145deg, #ffd38a, #b84a16);
 }
 
 .deal-3 {
-  background: linear-gradient(145deg, #ff4b1f, #32120e);
+  background: linear-gradient(145deg, #f4752c, #32120e);
 }
 
 .deal-4 {
-  background: linear-gradient(145deg, #f97316, #43140d);
+  background: linear-gradient(145deg, #f4752c, #43140d);
 }
 
 .deal-card > span {
@@ -1806,7 +1808,7 @@ select {
   min-height: 190px;
   background:
     radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.26), transparent 6rem),
-    linear-gradient(145deg, #572016, #d93618 54%, #ffb05c);
+    linear-gradient(145deg, #7a2f0d, #de5f1c 54%, #ffb05c);
 }
 
 .wholesale-art img,
@@ -1842,17 +1844,17 @@ select {
 
 .product-2,
 .product-6 {
-  background: linear-gradient(145deg, #32120e, #9a2617 52%, #f97316);
+  background: linear-gradient(145deg, #32120e, #7a2f0d 52%, #f4752c);
 }
 
 .product-3,
 .product-7 {
-  background: linear-gradient(145deg, #441309, #c03a1c 55%, #ffd38a);
+  background: linear-gradient(145deg, #441309, #b84a16 55%, #ffd38a);
 }
 
 .product-4,
 .product-8 {
-  background: linear-gradient(145deg, #210d0a, #b22a18 48%, #ff6a2a);
+  background: linear-gradient(145deg, #210d0a, #b84a16 48%, #f89a5c);
 }
 
 .wholesale-art span {
@@ -2000,7 +2002,7 @@ select {
   min-height: 40px;
   border: 0;
   border-radius: 8px;
-  background: linear-gradient(135deg, #ff6a2a, #d93618);
+  background: linear-gradient(135deg, #f89a5c, #de5f1c);
   color: #fffaf1;
   font-weight: 900;
 }
@@ -2512,14 +2514,14 @@ select {
   background:
     linear-gradient(90deg, rgba(20, 8, 6, 0.9), rgba(115, 24, 14, 0.18)),
     radial-gradient(circle at 76% 38%, rgba(255, 211, 138, 0.38), transparent 12rem),
-    linear-gradient(135deg, #1a0906, #d93618 58%, #ff9a3d);
+    linear-gradient(135deg, #1a0906, #de5f1c 58%, #ff9a3d);
 }
 
 .slide-3 {
   background:
     linear-gradient(90deg, rgba(20, 8, 6, 0.92), rgba(20, 8, 6, 0.36)),
     radial-gradient(circle at 72% 36%, rgba(255, 255, 255, 0.24), transparent 12rem),
-    linear-gradient(135deg, #2a0e08, #8f1712 48%, #f97316);
+    linear-gradient(135deg, #2a0e08, #7a2f0d 48%, #f4752c);
 }
 
 .store-slide p,
@@ -2556,7 +2558,7 @@ select {
   border-radius: 8px;
   padding: 0 0.9rem;
   background: #fff1e6;
-  color: #c2410c;
+  color: #b84a16;
   font-size: 1.15rem;
 }
 
@@ -3197,7 +3199,7 @@ select {
   border-radius: 8px;
   background:
     radial-gradient(circle at 32% 20%, rgba(255, 255, 255, 0.28), transparent 8rem),
-    linear-gradient(145deg, #572016, #d93618 54%, #ffb05c);
+    linear-gradient(145deg, #7a2f0d, #de5f1c 54%, #ffb05c);
   overflow: hidden;
 }
 
@@ -3506,7 +3508,7 @@ select {
 }
 
 .purchase-notice a {
-  color: #9a3412;
+  color: #7a2f0d;
   font-weight: 700 !important;
   text-decoration: underline;
 }
@@ -3682,19 +3684,19 @@ select {
 /* Orange-white storefront redesign */
 :root {
   color-scheme: light;
-  --bg: #fff7ed;
+  --bg: #fef1e8;
   --bg-2: #ffffff;
-  --text: #1f2937;
-  --muted: #667085;
-  --line: rgba(234, 88, 12, 0.16);
-  --hot: #ff6a00;
-  --ember: #f97316;
-  --gold: #ff8a00;
-  --wine: #9a3412;
+  --text: #17130f;
+  --muted: #6b7280;
+  --line: rgba(244, 117, 44, 0.18);
+  --hot: #f4752c;
+  --ember: #f4752c;
+  --gold: #de5f1c;
+  --wine: #7a2f0d;
   --surface: rgba(255, 255, 255, 0.92);
   --surface-strong: #ffffff;
-  --shadow: 0 18px 48px rgba(17, 24, 39, 0.08);
-  --soft: #fff1e6;
+  --shadow: 0 18px 48px rgba(23, 19, 15, 0.08);
+  --soft: #fef1e8;
   --soft-2: #f8fafc;
   --success: #079455;
   --danger: #d92d20;
@@ -3783,18 +3785,11 @@ select:focus {
 }
 
 .brand {
-  color: #111827;
-}
-
-.brand-mark {
-  border-color: rgba(255, 106, 0, 0.24);
-  background: linear-gradient(135deg, #ff8a00, #ff5a1f);
-  color: #ffffff;
-  box-shadow: 0 12px 26px rgba(249, 115, 22, 0.26);
+  color: #17130f;
 }
 
 .market-search {
-  border: 2px solid #ff7a1a;
+  border: 2px solid #f4752c;
   background: #ffffff;
   box-shadow: 0 10px 24px rgba(249, 115, 22, 0.12);
 }
@@ -3814,7 +3809,7 @@ select:focus {
 .filter-pills button.active,
 .login-tabs .active,
 .pagination-row .active {
-  background: linear-gradient(135deg, #ff8a00, #ff5a1f);
+  background: linear-gradient(135deg, #de5f1c, #f4752c);
   color: #ffffff;
   box-shadow: 0 14px 30px rgba(249, 115, 22, 0.24);
 }
@@ -3833,22 +3828,22 @@ select:focus {
 .market-nav a:first-child {
   border-color: rgba(249, 115, 22, 0.36);
   background: #fff7ed;
-  color: #c2410c;
+  color: #b84a16;
 }
 
 .cart-link span {
-  background: #ff6a00;
+  background: #f4752c;
   color: #ffffff;
 }
 
 .market-actions .cart-link {
   border-color: rgba(249, 115, 22, 0.34);
   background: #fff7ed;
-  color: #ea580c;
+  color: #f4752c;
 }
 
 .market-actions .cart-link svg {
-  color: #ff5a1f;
+  color: #f4752c;
 }
 
 .market-nav {
@@ -3907,7 +3902,7 @@ select:focus {
 
 .department-panel a:hover {
   background: #fff7ed;
-  color: #c2410c;
+  color: #b84a16;
 }
 
 .hero-carousel {
@@ -3924,21 +3919,21 @@ select:focus {
   background:
     radial-gradient(circle at 78% 28%, rgba(255, 138, 0, 0.22), transparent 18rem),
     linear-gradient(135deg, #fff7ed, #ffffff 54%, #ffedd5);
-  color: #111827;
+  color: #17130f;
 }
 
 .store-slide h1,
 .app-hero h1,
 .product-info-panel h1,
 .admin-toolbar h1 {
-  color: #111827;
+  color: #17130f;
   letter-spacing: 0;
 }
 
 .store-slide p,
 .kicker,
 .eyebrow {
-  color: #ea580c;
+  color: #f4752c;
 }
 
 .store-slide span,
@@ -3978,7 +3973,7 @@ select:focus {
 .featured-product-card strong,
 .deal-card p,
 .checkout-lines strong {
-  color: #ea580c;
+  color: #f4752c;
 }
 
 .hero-trends,
@@ -3988,7 +3983,7 @@ select:focus {
 .inline-notice {
   border-color: rgba(249, 115, 22, 0.2);
   background: #fff7ed;
-  color: #9a3412;
+  color: #7a2f0d;
 }
 
 .market-section,
@@ -4045,21 +4040,21 @@ select:focus {
 .wholesale-art span,
 .deal-card > span,
 .product-main-image span {
-  background: #ff6a00;
+  background: #f4752c;
   color: #ffffff;
 }
 
 .wish-button {
   border-color: rgba(249, 115, 22, 0.2);
   background: #ffffff;
-  color: #ea580c;
+  color: #f4752c;
   box-shadow: 0 8px 18px rgba(17, 24, 39, 0.08);
 }
 
 .wish-button.active,
 .wish-button:hover {
   background: #fff7ed;
-  color: #ff5a1f;
+  color: #f4752c;
 }
 
 .product-meta span,
@@ -4099,7 +4094,7 @@ select:focus {
 
 .quantity-stepper button {
   background: #fff7ed;
-  color: #ea580c;
+  color: #f4752c;
 }
 
 .deal-strip {
@@ -4112,7 +4107,7 @@ select:focus {
 }
 
 .deal-copy span {
-  color: #c2410c;
+  color: #b84a16;
 }
 
 .filter-panel {
@@ -4181,7 +4176,7 @@ select:focus {
   border-radius: 999px;
   padding: 0.45rem 0.7rem;
   background: #ffffff;
-  color: #9a3412;
+  color: #7a2f0d;
   font-size: 0.82rem;
   font-weight: 850;
 }
@@ -4202,7 +4197,7 @@ select:focus {
 
 .footer-newsletter h2 {
   max-width: 500px;
-  color: #111827;
+  color: #17130f;
   font-size: clamp(1.55rem, 3vw, 2.45rem);
   line-height: 1.02;
 }
@@ -4225,7 +4220,7 @@ select:focus {
   border: 0;
   border-radius: 10px;
   padding: 0 1.15rem;
-  background: linear-gradient(135deg, #ff8a00, #ff5a1f);
+  background: linear-gradient(135deg, #de5f1c, #f4752c);
   color: #ffffff;
   font-weight: 900;
   cursor: pointer;
@@ -4244,7 +4239,7 @@ select:focus {
 }
 
 .footer-column h3 {
-  color: #111827;
+  color: #17130f;
   font-size: 0.88rem;
   font-weight: 950;
   text-transform: uppercase;
@@ -4257,7 +4252,7 @@ select:focus {
 }
 
 .footer-column a:hover {
-  color: #ea580c;
+  color: #f4752c;
 }
 
 .footer-contact span {
@@ -4297,7 +4292,7 @@ select:focus {
   bottom: 1rem;
   z-index: 80;
   padding: 0.85rem 1rem;
-  color: #9a3412;
+  color: #7a2f0d;
 }
 
 .error-state {
@@ -4384,7 +4379,7 @@ select:focus {
 }
 
 .admin-sidebar-head strong {
-  color: #111827;
+  color: #17130f;
   font-size: 1.1rem;
 }
 
@@ -4393,7 +4388,7 @@ select:focus {
   border: 1px solid #f0e2d7;
   border-radius: 9px;
   background: #fff7ed;
-  color: #c2410c;
+  color: #b84a16;
   cursor: pointer;
 }
 
@@ -4414,7 +4409,7 @@ select:focus {
 .admin-sidebar nav a.active,
 .admin-sidebar nav a:hover {
   background: #fff7ed;
-  color: #ea580c;
+  color: #f4752c;
 }
 
 .admin-main {
@@ -4480,7 +4475,7 @@ select:focus {
   place-items: center;
   border-radius: 12px;
   background: #fff7ed;
-  color: #ea580c;
+  color: #f4752c;
 }
 
 .admin-summary-grid small {
@@ -4489,7 +4484,7 @@ select:focus {
 }
 
 .admin-summary-grid strong {
-  color: #111827;
+  color: #17130f;
   font-size: 1.65rem;
 }
 
@@ -4515,7 +4510,7 @@ select:focus {
 
 .admin-panel h2 {
   margin-bottom: 0.35rem;
-  color: #111827;
+  color: #17130f;
   font-size: 1.25rem;
   line-height: 1.2;
 }
@@ -4548,7 +4543,7 @@ select:focus {
 .bar-chart span {
   min-height: 36px;
   border-radius: 999px 999px 6px 6px;
-  background: linear-gradient(180deg, #ff8a00, #ff5a1f);
+  background: linear-gradient(180deg, #de5f1c, #f4752c);
   box-shadow: 0 12px 24px rgba(249, 115, 22, 0.2);
 }
 
@@ -4569,7 +4564,7 @@ select:focus {
 
 .payment-mix strong,
 .admin-list strong {
-  color: #111827;
+  color: #17130f;
 }
 
 .admin-table {
@@ -4594,7 +4589,7 @@ select:focus {
 
 .admin-table-row.head {
   border-top: 0;
-  color: #111827;
+  color: #17130f;
   font-size: 0.78rem;
   font-weight: 900;
   text-transform: uppercase;
@@ -4639,7 +4634,7 @@ select:focus {
   border-radius: 12px;
   padding: 0.75rem;
   background: #fff7ed;
-  color: #9a3412;
+  color: #7a2f0d;
   font-weight: 850;
 }
 
@@ -4890,7 +4885,7 @@ select:focus {
 .account-sidebar a.active,
 .account-sidebar a:hover {
   background: #fff7ed;
-  color: #ea580c;
+  color: #f4752c;
 }
 
 .account-dashboard-main {
@@ -4909,7 +4904,7 @@ select:focus {
 
 .account-welcome-panel h2 {
   margin-bottom: 0.45rem;
-  color: #111827;
+  color: #17130f;
   font-size: clamp(1.75rem, 4vw, 3.25rem);
 }
 
@@ -4926,15 +4921,15 @@ select:focus {
   min-width: 180px;
   gap: 0.2rem;
   padding: 1rem;
-  color: #9a3412;
+  color: #7a2f0d;
 }
 
 .account-status-card svg {
-  color: #ea580c;
+  color: #f4752c;
 }
 
 .account-status-card strong {
-  color: #111827;
+  color: #17130f;
 }
 
 .account-metrics {
@@ -4967,7 +4962,7 @@ select:focus {
 }
 
 .account-signal-grid strong {
-  color: #111827;
+  color: #17130f;
 }
 
 .account-section-head {
@@ -4979,12 +4974,12 @@ select:focus {
 }
 
 .account-section-head h2 {
-  color: #111827;
+  color: #17130f;
   font-size: clamp(1.45rem, 3vw, 2.25rem);
 }
 
 .account-section-head a {
-  color: #ea580c;
+  color: #f4752c;
   font-weight: 900;
 }
 
@@ -5112,7 +5107,7 @@ select:focus {
   border-radius: 999px;
   padding: 0.42rem 0.68rem;
   background: #ffffff;
-  color: #9a3412;
+  color: #7a2f0d;
   font-size: 0.82rem;
   font-weight: 850;
 }
@@ -5142,7 +5137,7 @@ select:focus {
 .store-footer .footer-newsletter h2 {
   max-width: 500px;
   margin: 0;
-  color: #111827;
+  color: #17130f;
   font-size: clamp(1.5rem, 3vw, 2.35rem);
   line-height: 1.02;
 }
@@ -5166,7 +5161,7 @@ select:focus {
   border: 0;
   border-radius: 10px;
   padding: 0 1.1rem;
-  background: linear-gradient(135deg, #ff8a00, #ff5a1f);
+  background: linear-gradient(135deg, #de5f1c, #f4752c);
   color: #ffffff;
   font-weight: 900;
   cursor: pointer;
@@ -5175,7 +5170,7 @@ select:focus {
 
 .store-footer .footer-column h3 {
   margin: 0 0 0.15rem;
-  color: #111827;
+  color: #17130f;
   font-size: 0.86rem;
   font-weight: 950;
   text-transform: uppercase;
@@ -5192,7 +5187,7 @@ select:focus {
 }
 
 .store-footer .footer-column a:hover {
-  color: #ea580c;
+  color: #f4752c;
 }
 
 .store-footer .footer-contact span {
@@ -5893,9 +5888,9 @@ strong,
 .filter-pills button:hover,
 .card-actions a:hover,
 .card-actions button:hover {
-  border-color: #ea580c !important;
+  border-color: #f4752c !important;
   background: #fff7ed !important;
-  color: #9a3412 !important;
+  color: #7a2f0d !important;
 }
 
 .primary-action,
@@ -5916,23 +5911,23 @@ strong,
 .card-actions a svg,
 .market-actions a svg,
 .secondary-action svg {
-  color: #c2410c !important;
+  color: #b84a16 !important;
 }
 
 .cart-link,
 .market-actions .cart-link {
   background: #fff7ed !important;
-  color: #9a3412 !important;
+  color: #7a2f0d !important;
 }
 
 .cart-link span {
-  background: #ea580c !important;
+  background: #f4752c !important;
   color: #ffffff !important;
 }
 
 .filter-pills button.active {
-  border-color: #ea580c !important;
-  background: linear-gradient(135deg, #ff8a00, #ff5a1f) !important;
+  border-color: #f4752c !important;
+  background: linear-gradient(135deg, #de5f1c, #f4752c) !important;
   color: #ffffff !important;
   box-shadow: 0 10px 22px rgba(249, 115, 22, 0.22) !important;
 }
@@ -5952,7 +5947,7 @@ strong,
 
 .auth-page .auth-band h2 {
   max-width: 420px;
-  color: #111827;
+  color: #17130f;
   font-size: clamp(1.8rem, 4vw, 3rem);
   line-height: 1.05;
 }
@@ -5960,6 +5955,22 @@ strong,
 .auth-page .auth-band p:not(.kicker) {
   max-width: 440px;
   color: #667085;
+}
+
+.auth-page .app-hero {
+  align-items: center;
+}
+
+.auth-logo-lockup {
+  align-self: center;
+  height: auto;
+  filter: drop-shadow(0 12px 28px rgba(244, 117, 44, 0.18));
+}
+
+@media (max-width: 920px) {
+  .auth-logo-lockup {
+    display: none;
+  }
 }
 
 /* Shop product cards */
@@ -5998,7 +6009,7 @@ strong,
   height: 2.1rem;
   border: 1px solid rgba(255, 255, 255, 0.75);
   background: rgba(255, 255, 255, 0.92) !important;
-  color: #c2410c !important;
+  color: #b84a16 !important;
   box-shadow: 0 8px 18px rgba(17, 24, 39, 0.12);
   backdrop-filter: blur(10px);
 }
@@ -6006,7 +6017,7 @@ strong,
 .storefront .shop-product-card .wish-button.active,
 .storefront .shop-product-card .wish-button:hover {
   background: #fff7ed !important;
-  color: #ea580c !important;
+  color: #f4752c !important;
 }
 
 .storefront .shop-product-art {
@@ -6057,7 +6068,7 @@ strong,
   border: 1px solid rgba(255, 255, 255, 0.72);
   border-radius: 999px;
   padding: 0.25rem 0.48rem;
-  background: #ea580c;
+  background: #f4752c;
   color: #ffffff;
   font-size: 0.66rem;
   font-weight: 800;
@@ -6066,7 +6077,7 @@ strong,
 }
 
 .storefront .shop-product-badges span:last-child {
-  background: #111827;
+  background: #17130f;
 }
 
 .storefront .shop-product-copy {
@@ -6095,7 +6106,7 @@ strong,
 .storefront .shop-product-topline p {
   margin: 0;
   overflow: hidden;
-  color: #9a3412;
+  color: #7a2f0d;
   font-size: 0.69rem;
   font-weight: 750;
   text-overflow: ellipsis;
@@ -6118,7 +6129,7 @@ strong,
   min-height: 2.35rem;
   margin: 0;
   overflow: hidden;
-  color: #111827;
+  color: #17130f;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   font-size: 0.95rem;
@@ -6131,7 +6142,7 @@ strong,
 }
 
 .storefront .shop-price-row strong {
-  color: #ea580c;
+  color: #f4752c;
   font-size: 1.05rem;
   font-weight: 850;
   line-height: 1;
@@ -6212,14 +6223,14 @@ strong,
   padding: 0 0.75rem;
   border: 1px solid #f0e2d7 !important;
   background: #ffffff !important;
-  color: #9a3412 !important;
+  color: #7a2f0d !important;
 }
 
 .storefront .shop-card-actions button {
   flex: 1;
   gap: 0.35rem;
-  border: 1px solid #ea580c !important;
-  background: linear-gradient(135deg, #ff8a00, #ff5a1f) !important;
+  border: 1px solid #f4752c !important;
+  background: linear-gradient(135deg, #de5f1c, #f4752c) !important;
   color: #ffffff !important;
   box-shadow: 0 10px 18px rgba(234, 88, 12, 0.2);
 }
@@ -6333,7 +6344,7 @@ strong,
 
 .shop-title-block h2 {
   margin: 0;
-  color: #111827;
+  color: #17130f;
   font-size: clamp(1.35rem, 3vw, 2.15rem);
   line-height: 1.05;
 }
@@ -6363,7 +6374,7 @@ strong,
 }
 
 .shop-search-row svg {
-  color: #ea580c;
+  color: #f4752c;
 }
 
 .shop-search-row input {
@@ -6372,7 +6383,7 @@ strong,
   padding: 0;
   background: transparent;
   box-shadow: none;
-  color: #111827;
+  color: #17130f;
 }
 
 .shop-search-row input:focus {
@@ -6393,7 +6404,7 @@ strong,
   border-color: #f0e2d7;
   border-radius: 12px;
   background: #ffffff;
-  color: #111827;
+  color: #17130f;
   font-weight: 700;
 }
 
@@ -6442,8 +6453,8 @@ strong,
 }
 
 .shop-shelf-bar .filter-pills button.active {
-  border-color: #ea580c !important;
-  background: #ea580c !important;
+  border-color: #f4752c !important;
+  background: #f4752c !important;
   color: #ffffff !important;
   box-shadow: 0 8px 18px rgba(234, 88, 12, 0.18) !important;
 }
@@ -6458,7 +6469,7 @@ strong,
   border-radius: 999px;
   padding: 0 0.85rem;
   background: #fffaf5;
-  color: #9a3412;
+  color: #7a2f0d;
   font-size: 0.78rem;
   font-weight: 750;
   white-space: nowrap;
@@ -6471,7 +6482,7 @@ strong,
   min-width: 1.1rem;
   height: 1.1rem;
   border-radius: 999px;
-  background: #ea580c;
+  background: #f4752c;
   color: #ffffff;
   font-size: 0.66rem;
   font-weight: 900;
@@ -6482,7 +6493,7 @@ strong,
   min-height: 42px;
   border: 0;
   border-radius: 10px;
-  background: #ea580c;
+  background: #f4752c;
   color: #ffffff;
   font-size: 0.85rem;
   font-weight: 800;
@@ -6504,7 +6515,7 @@ strong,
 }
 
 .shop-result-count strong {
-  color: #111827;
+  color: #17130f;
   font-size: 1rem;
 }
 
@@ -6544,7 +6555,7 @@ strong,
   align-items: center;
   gap: 0.45rem;
   margin: 0;
-  color: #111827;
+  color: #17130f;
   font-size: 1rem;
 }
 
@@ -6554,7 +6565,7 @@ strong,
   border-radius: 999px;
   padding: 0 0.65rem;
   background: #fff7ed;
-  color: #9a3412;
+  color: #7a2f0d;
   font-size: 0.76rem;
   font-weight: 800;
   cursor: pointer;
@@ -6577,13 +6588,13 @@ strong,
   width: 1.55rem;
   height: 1.55rem;
   border-radius: 999px;
-  background: #ea580c;
+  background: #f4752c;
   color: #ffffff;
   font-size: 0.8rem;
 }
 
 .active-filter-count span {
-  color: #9a3412;
+  color: #7a2f0d;
   font-size: 0.8rem;
   font-weight: 750;
 }
@@ -6597,7 +6608,7 @@ strong,
 
 .filter-group p {
   margin: 0;
-  color: #111827;
+  color: #17130f;
   font-size: 0.8rem;
   font-weight: 850;
 }
@@ -6618,7 +6629,7 @@ strong,
   border-radius: 10px;
   padding: 0 0.62rem;
   background: #ffffff;
-  color: #111827;
+  color: #17130f;
   font-size: 0.82rem;
   font-weight: 650;
 }
@@ -6723,7 +6734,7 @@ strong,
     border: 1px solid #f0e2d7;
     border-radius: 999px;
     background: #fffaf5;
-    color: #111827;
+    color: #17130f;
   }
 
   .filter-panel-apply {
@@ -6871,8 +6882,8 @@ strong,
   }
 
   .shop-pagination button.active {
-    border-color: #ea580c !important;
-    background: #ea580c !important;
+    border-color: #f4752c !important;
+    background: #f4752c !important;
     color: #ffffff !important;
     box-shadow: 0 8px 16px rgba(234, 88, 12, 0.18);
   }
@@ -6957,7 +6968,7 @@ strong,
 
 .shop-page .shop-card-rating-row p {
   max-width: 62%;
-  color: #9a3412;
+  color: #7a2f0d;
   font-size: 0.68rem;
   font-weight: 800;
   text-transform: none;
@@ -6972,7 +6983,7 @@ strong,
   display: -webkit-box;
   min-height: 2.2rem;
   overflow: hidden;
-  color: #111827;
+  color: #17130f;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   font-size: 0.92rem;
@@ -6981,7 +6992,7 @@ strong,
 }
 
 .shop-page .shop-product-name:hover {
-  color: #c2410c;
+  color: #b84a16;
 }
 
 .shop-page .shop-price-row {
@@ -6990,7 +7001,7 @@ strong,
 }
 
 .shop-page .shop-price-row strong {
-  color: #ea580c;
+  color: #f4752c;
   font-size: 1rem;
 }
 
@@ -7061,7 +7072,7 @@ strong,
   min-height: 2.25rem;
   border: 0 !important;
   border-radius: 10px;
-  background: #ea580c !important;
+  background: #f4752c !important;
   color: #ffffff !important;
   font-size: 0.78rem;
   font-weight: 800;
@@ -7069,7 +7080,7 @@ strong,
 }
 
 .shop-page .shop-card-actions button:hover {
-  background: #c2410c !important;
+  background: #b84a16 !important;
 }
 
 .shop-page .shop-card-actions button svg {
@@ -7153,7 +7164,7 @@ strong,
 }
 
 .google-auth-card svg {
-  color: #c2410c;
+  color: #b84a16;
 }
 
 .google-auth-card div {
@@ -7176,7 +7187,7 @@ strong,
 }
 
 .auth-switch-row a {
-  color: #c2410c;
+  color: #b84a16;
   font-weight: 700 !important;
 }
 
@@ -7199,11 +7210,11 @@ strong,
 }
 
 .auth-benefit-grid svg {
-  color: #ea580c;
+  color: #f4752c;
 }
 
 .auth-benefit-grid strong {
-  color: #111827;
+  color: #17130f;
 }
 
 .auth-benefit-grid span {
@@ -7244,7 +7255,7 @@ strong,
 
 .cart-summary .checkout-head h2 {
   margin: 0.15rem 0 0.25rem;
-  color: #111827;
+  color: #17130f;
   font-size: 1.45rem;
   line-height: 1.1;
 }
@@ -7270,7 +7281,7 @@ strong,
 
 .cart-payment-card svg {
   flex: 0 0 auto;
-  color: #ea580c;
+  color: #f4752c;
 }
 
 .cart-payment-card div {
@@ -7279,7 +7290,7 @@ strong,
 }
 
 .cart-payment-card strong {
-  color: #111827;
+  color: #17130f;
   font-size: 0.92rem;
 }
 
@@ -7310,7 +7321,7 @@ strong,
 
 .cart-summary .checkout-lines div:last-child span,
 .cart-summary .checkout-lines div:last-child strong {
-  color: #111827;
+  color: #17130f;
   font-size: 1rem;
 }
 
@@ -7361,7 +7372,7 @@ strong,
 }
 
 .cart-checkout-trust svg {
-  color: #ea580c;
+  color: #f4752c;
 }
 
 .cart-row {
@@ -7398,12 +7409,12 @@ strong,
   margin-top: 0.35rem;
   padding: 0.22rem 0.45rem;
   background: #fff7ed;
-  color: #9a3412;
+  color: #7a2f0d;
   font-size: 0.72rem;
 }
 
 .cart-row > strong {
-  color: #111827;
+  color: #17130f;
   text-align: right;
 }
 
@@ -7525,7 +7536,7 @@ strong,
 
 .mobile-menu-actions a {
   background: #fff7ed;
-  color: #9a3412;
+  color: #7a2f0d;
 }
 
 @media (max-width: 640px) {
@@ -7533,7 +7544,7 @@ strong,
     display: inline-flex !important;
     border-color: rgba(234, 88, 12, 0.28) !important;
     background: #fff7ed !important;
-    color: #9a3412 !important;
+    color: #7a2f0d !important;
   }
 
   .market-nav {
@@ -7619,7 +7630,7 @@ strong,
 }
 
 .auth-card-head strong {
-  color: #111827;
+  color: #17130f;
   font-size: 1.2rem;
 }
 
@@ -7653,7 +7664,7 @@ strong,
 
 .auth-page .login-tabs .active {
   background: #ffffff;
-  color: #9a3412;
+  color: #7a2f0d;
   box-shadow: 0 8px 20px rgba(17, 24, 39, 0.08);
 }
 
@@ -7778,7 +7789,7 @@ strong,
   height: 2.5rem;
   border-radius: 10px;
   background: #fff1e6;
-  color: #ea580c;
+  color: #f4752c;
 }
 
 .trust-strip .product-confidence-grid {

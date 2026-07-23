@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { cancelOrder, getOrderByNumber } from "@/lib/db/orders";
 import { resolveCustomerId } from "@/lib/auth/session";
+import { getMedusaOrderById } from "@/lib/medusa/orders";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ orderNumber: string }> }) {
   const { orderNumber } = await params;
-  const order = await getOrderByNumber(orderNumber);
+  const order = await getOrderByNumber(orderNumber) ?? await getMedusaOrderById(orderNumber);
 
   if (!order) {
     return NextResponse.json({ error: "Order not found." }, { status: 404 });

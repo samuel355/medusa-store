@@ -1,7 +1,7 @@
 import { defineWidgetConfig } from "@medusajs/admin-sdk";
 import { useEffect, useLayoutEffect } from "react";
 
-const SobalAdminTheme = () => {
+const BegnonAdminTheme = () => {
   useLayoutEffect(() => {
     const path = window.location.pathname.replace(/\/$/, "");
     if (path === "/app") {
@@ -61,14 +61,14 @@ const SobalAdminTheme = () => {
   return (
     <style>{`
       :root {
-        --sobal-orange: #ea580c;
-        --sobal-orange-dark: #c2410c;
-        --sobal-orange-strong: #9a3412;
-        --sobal-orange-soft: #fff7ed;
-        --sobal-orange-soft-2: #ffedd5;
-        --sobal-ink: #1c1917;
-        --sobal-muted: #78716c;
-        --sobal-border: #fed7aa;
+        --begnon-orange: #f4752c;
+        --begnon-orange-dark: #b84a16;
+        --begnon-orange-strong: #7a2f0d;
+        --begnon-orange-soft: #fff7ed;
+        --begnon-orange-soft-2: #ffedd5;
+        --begnon-ink: #1c1917;
+        --begnon-muted: #78716c;
+        --begnon-border: #f5c9a8;
 
         --bg-base: #ffffff;
         --bg-base-hover: #fff7ed;
@@ -85,23 +85,23 @@ const SobalAdminTheme = () => {
         --bg-field-component-hover: #fff7ed;
         --bg-highlight: #fff7ed;
         --bg-highlight-hover: #ffedd5;
-        --bg-interactive: #ea580c;
-        --border-base: #fed7aa;
-        --border-strong: #fb923c;
-        --border-interactive: #ea580c;
+        --bg-interactive: #f4752c;
+        --border-base: #f5c9a8;
+        --border-strong: #f89a5c;
+        --border-interactive: #f4752c;
         --fg-base: #1c1917;
         --fg-subtle: #57534e;
         --fg-muted: #78716c;
-        --fg-interactive: #ea580c;
-        --fg-interactive-hover: #c2410c;
+        --fg-interactive: #f4752c;
+        --fg-interactive-hover: #b84a16;
         --fg-on-color: #ffffff;
         --fg-on-inverted: #ffffff;
-        --button-inverted: #ea580c;
-        --button-inverted-hover: #c2410c;
-        --button-inverted-pressed: #9a3412;
+        --button-inverted: #f4752c;
+        --button-inverted-hover: #b84a16;
+        --button-inverted-pressed: #7a2f0d;
         --button-neutral: #fff7ed;
         --button-neutral-hover: #ffedd5;
-        --button-neutral-pressed: #fed7aa;
+        --button-neutral-pressed: #f5c9a8;
         color-scheme: light;
       }
 
@@ -123,23 +123,23 @@ const SobalAdminTheme = () => {
         --bg-field-component-hover: #fff7ed;
         --bg-highlight: #fff7ed;
         --bg-highlight-hover: #ffedd5;
-        --bg-interactive: #ea580c;
-        --border-base: #fed7aa;
-        --border-strong: #fb923c;
-        --border-interactive: #ea580c;
+        --bg-interactive: #f4752c;
+        --border-base: #f5c9a8;
+        --border-strong: #f89a5c;
+        --border-interactive: #f4752c;
         --fg-base: #1c1917;
         --fg-subtle: #57534e;
         --fg-muted: #78716c;
-        --fg-interactive: #ea580c;
-        --fg-interactive-hover: #c2410c;
+        --fg-interactive: #f4752c;
+        --fg-interactive-hover: #b84a16;
         --fg-on-color: #ffffff;
         --fg-on-inverted: #ffffff;
-        --button-inverted: #ea580c;
-        --button-inverted-hover: #c2410c;
-        --button-inverted-pressed: #9a3412;
+        --button-inverted: #f4752c;
+        --button-inverted-hover: #b84a16;
+        --button-inverted-pressed: #7a2f0d;
         --button-neutral: #fff7ed;
         --button-neutral-hover: #ffedd5;
-        --button-neutral-pressed: #fed7aa;
+        --button-neutral-pressed: #f5c9a8;
         color-scheme: light;
       }
 
@@ -165,7 +165,7 @@ const SobalAdminTheme = () => {
       .focus-visible\\:bg-ui-bg-base-hover:focus-visible,
       .aria-selected\\:bg-ui-bg-base-hover[aria-selected="true"],
       .data-\\[state\\=open\\]\\:bg-ui-bg-subtle-hover[data-state="open"] {
-        background-color: var(--sobal-orange-soft) !important;
+        background-color: var(--begnon-orange-soft) !important;
       }
 
       .bg-ui-bg-base-pressed,
@@ -174,25 +174,25 @@ const SobalAdminTheme = () => {
       .active\\:bg-ui-bg-subtle-pressed:active,
       .focus-visible\\:bg-ui-bg-base-pressed:focus-visible,
       .aria-selected\\:bg-ui-bg-base-pressed[aria-selected="true"] {
-        background-color: var(--sobal-orange-soft-2) !important;
+        background-color: var(--begnon-orange-soft-2) !important;
       }
 
       .border-ui-border-base,
       .border-r-ui-border-base,
       .shadow-borders-base,
       .ring-ui-border-base {
-        border-color: var(--sobal-border) !important;
-        --tw-ring-color: var(--sobal-border) !important;
-        --tw-shadow-color: var(--sobal-border) !important;
+        border-color: var(--begnon-border) !important;
+        --tw-ring-color: var(--begnon-border) !important;
+        --tw-shadow-color: var(--begnon-border) !important;
       }
 
       .text-ui-fg-base {
-        color: var(--sobal-ink) !important;
+        color: var(--begnon-ink) !important;
       }
 
       .text-ui-fg-subtle,
       .text-ui-fg-muted {
-        color: var(--sobal-muted) !important;
+        color: var(--begnon-muted) !important;
       }
 
       .text-ui-fg-interactive,
@@ -201,7 +201,7 @@ const SobalAdminTheme = () => {
       .focus-visible\\:text-ui-fg-interactive-hover:focus-visible,
       .group[data-state="open"] .group-data-\\[state\\=open\\]\\:text-ui-fg-interactive,
       .group\\/trigger[data-state="active"] .group-data-\\[state\\=active\\]\\/trigger\\:text-ui-fg-interactive {
-        color: var(--sobal-orange) !important;
+        color: var(--begnon-orange) !important;
       }
 
       .bg-ui-button-inverted,
@@ -209,14 +209,14 @@ const SobalAdminTheme = () => {
       .active\\:bg-ui-button-inverted-pressed:active,
       .bg-ui-bg-interactive,
       .bg-ui-fg-interactive {
-        background-color: var(--sobal-orange) !important;
+        background-color: var(--begnon-orange) !important;
         color: #ffffff !important;
       }
 
       .bg-ui-button-neutral,
       .hover\\:enabled\\:bg-ui-bg-base-hover:enabled:hover {
-        background-color: var(--sobal-orange-soft) !important;
-        color: var(--sobal-orange-dark) !important;
+        background-color: var(--begnon-orange-soft) !important;
+        color: var(--begnon-orange-dark) !important;
       }
 
       .fill-ui-button-inverted {
@@ -226,7 +226,7 @@ const SobalAdminTheme = () => {
       .shadow-elevation-card-rest,
       .shadow-elevation-flyout,
       .shadow-elevation-modal {
-        box-shadow: 0 12px 30px rgba(154, 52, 18, 0.08), 0 1px 0 rgba(251, 146, 60, 0.18) !important;
+        box-shadow: 0 12px 30px rgba(122, 47, 13, 0.08), 0 1px 0 rgba(248, 154, 92, 0.18) !important;
       }
 
       aside,
@@ -234,7 +234,7 @@ const SobalAdminTheme = () => {
       header,
       [class*="sticky top-0"],
       [class*="sticky bottom-0"] {
-        border-color: var(--sobal-border) !important;
+        border-color: var(--begnon-border) !important;
       }
 
       a[href="/app/dashboard"][aria-current="page"],
@@ -244,9 +244,9 @@ const SobalAdminTheme = () => {
       a[aria-current="page"],
       a[data-state="active"],
       [role="link"][aria-current="page"] {
-        background: var(--sobal-orange-soft) !important;
-        color: var(--sobal-orange-dark) !important;
-        box-shadow: inset 3px 0 0 var(--sobal-orange), 0 6px 18px rgba(234, 88, 12, 0.10) !important;
+        background: var(--begnon-orange-soft) !important;
+        color: var(--begnon-orange-dark) !important;
+        box-shadow: inset 3px 0 0 var(--begnon-orange), 0 6px 18px rgba(244, 117, 44, 0.10) !important;
       }
 
       a[href="/app/dashboard"],
@@ -271,16 +271,16 @@ const SobalAdminTheme = () => {
       a[href="/app/inventory"]:hover,
       a[href="/app/promotions"]:hover,
       a[href="/app/settings"]:hover {
-        background: var(--sobal-orange-soft) !important;
-        color: var(--sobal-orange-dark) !important;
+        background: var(--begnon-orange-soft) !important;
+        color: var(--begnon-orange-dark) !important;
       }
 
       input:focus,
       textarea:focus,
       button:focus-visible,
       a:focus-visible {
-        outline-color: var(--sobal-orange) !important;
-        box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.16) !important;
+        outline-color: var(--begnon-orange) !important;
+        box-shadow: 0 0 0 2px rgba(244, 117, 44, 0.16) !important;
       }
 
       table thead,
@@ -288,8 +288,8 @@ const SobalAdminTheme = () => {
         background-color: #fff7ed !important;
       }
 
-      .sobal-admin-accent {
-        color: var(--sobal-orange);
+      .begnon-admin-accent {
+        color: var(--begnon-orange);
       }
     `}</style>
   );
@@ -299,4 +299,4 @@ export const config = defineWidgetConfig({
   zone: ["login.before", "topbar"],
 });
 
-export default SobalAdminTheme;
+export default BegnonAdminTheme;

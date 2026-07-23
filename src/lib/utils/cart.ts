@@ -25,18 +25,22 @@ export type CartResponse = {
   totals: CartTotals;
 };
 
-export const CART_UPDATED_EVENT = "sobalshop:cart-updated";
+export const CART_UPDATED_EVENT = "begnon:cart-updated";
 
 const EMPTY_CART: CartResponse = { id: null, items: [], totals: { quantity: 0, subtotal: 0, shipping: 0, total: 0 } };
+let activeCartRequest: Promise<CartResponse> | null = null;
 
 export async function fetchCart(): Promise<CartResponse> {
-  try {
-    const response = await fetch("/api/cart", { cache: "no-store" });
-    if (!response.ok) return EMPTY_CART;
-    return (await response.json()) as CartResponse;
-  } catch {
-    return EMPTY_CART;
-  }
+  if (activeCartRequest) return activeCartRequest;
+
+  activeCartRequest = fetch("/api/cart", { cache: "no-store" })
+    .then(async (response) => response.ok ? (await response.json()) as CartResponse : EMPTY_CART)
+    .catch(() => EMPTY_CART)
+    .finally(() => {
+      activeCartRequest = null;
+    });
+
+  return activeCartRequest;
 }
 
 function notifyCartUpdated() {

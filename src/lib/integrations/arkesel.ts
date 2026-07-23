@@ -6,7 +6,7 @@ export type SmsMessage = {
   sender?: string;
 };
 
-export async function sendSms({ to, message, sender = "SobalShop" }: SmsMessage) {
+export async function sendSms({ to, message, sender = "Begnon" }: SmsMessage) {
   const response = await fetch("https://sms.arkesel.com/api/v2/sms/send", {
     method: "POST",
     headers: {

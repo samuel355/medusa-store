@@ -1,4 +1,4 @@
--- SobalShop / MedusaStore Supabase schema
+-- Begnon / MedusaStore Supabase schema
 -- Paste this entire file into the Supabase SQL Editor.
 -- Schema name: medusastore
 
@@ -356,8 +356,15 @@ create index if not exists customers_auth_user_id_idx on medusastore.customers(a
 create index if not exists customers_email_idx on medusastore.customers(email);
 create index if not exists products_category_id_idx on medusastore.products(category_id);
 create index if not exists products_status_idx on medusastore.products(status);
+create index if not exists products_status_created_at_idx on medusastore.products(status, created_at desc);
 create index if not exists product_variants_product_id_idx on medusastore.product_variants(product_id);
+create index if not exists product_variants_active_product_idx on medusastore.product_variants(product_id) where is_active = true;
+create index if not exists product_media_product_sort_idx on medusastore.product_media(product_id, sort_order);
 create index if not exists carts_customer_id_idx on medusastore.carts(customer_id);
+create index if not exists carts_active_customer_idx on medusastore.carts(customer_id) where status = 'active';
+create index if not exists cart_items_cart_id_idx on medusastore.cart_items(cart_id);
+create index if not exists categories_active_sort_idx on medusastore.categories(sort_order) where is_active = true;
+create index if not exists hero_banners_active_sort_idx on medusastore.hero_banners(sort_order) where is_active = true;
 create index if not exists orders_customer_id_idx on medusastore.orders(customer_id);
 create index if not exists orders_status_idx on medusastore.orders(status);
 create index if not exists orders_order_number_idx on medusastore.orders(order_number);

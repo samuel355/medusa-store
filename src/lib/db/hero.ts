@@ -1,4 +1,5 @@
 import { getSql } from "@/lib/db/client";
+import { unstable_cache } from "next/cache";
 
 export type HeroBanner = {
   id: string;
@@ -9,7 +10,7 @@ export type HeroBanner = {
   ctaHref: string;
 };
 
-export async function getActiveHeroBanners(): Promise<HeroBanner[]> {
+async function queryActiveHeroBanners(): Promise<HeroBanner[]> {
   const sql = getSql();
   const rows = await sql<
     {
@@ -36,3 +37,8 @@ export async function getActiveHeroBanners(): Promise<HeroBanner[]> {
     ctaHref: row.cta_href ?? "/shop",
   }));
 }
+
+export const getActiveHeroBanners = unstable_cache(queryActiveHeroBanners, ["active-hero-banners"], {
+  revalidate: 300,
+  tags: ["hero-banners"],
+});

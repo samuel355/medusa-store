@@ -112,7 +112,7 @@ export function AuthPanel({ initialMode = "login" }: AuthPanelProps) {
             {method === "Phone" ? "Mobile number" : "Email address"}
             <input
               type={method === "Phone" ? "tel" : "email"}
-              placeholder={method === "Phone" ? "+233 24 000 0000" : "customer@sobalshop.com"}
+              placeholder={method === "Phone" ? "+233 24 000 0000" : "customer@begnon.com"}
               value={value}
               onChange={(event) => setValue(event.target.value)}
             />
@@ -122,7 +122,7 @@ export function AuthPanel({ initialMode = "login" }: AuthPanelProps) {
             <UserRound size={20} />
             <div>
               <strong>Continue with Google</strong>
-              <span>Secure OAuth sign-in for your SobalShop account.</span>
+              <span>Secure OAuth sign-in for your Begnon account.</span>
             </div>
           </div>
         )}

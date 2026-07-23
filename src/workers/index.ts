@@ -1,7 +1,7 @@
 import { fulfillmentWorker } from "@/workers/fulfillment";
 import { notificationWorker } from "@/workers/notifications";
 
-console.log("SobalShop workers started: fulfillment, notifications");
+console.log("Begnon workers started: fulfillment, notifications");
 
 async function shutdown(signal: string) {
   console.log(`Received ${signal}, closing workers...`);

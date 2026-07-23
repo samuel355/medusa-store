@@ -15,8 +15,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const product = await getProductBySlug(slug);
 
   return {
-    title: product ? `${product.name} | SobalShop` : "Product | SobalShop",
-    description: product?.description ?? "Shop products from SobalShop."
+    title: product ? `${product.name} | Begnon` : "Product | Begnon",
+    description: product?.description ?? "Shop products from Begnon."
   };
 }
 

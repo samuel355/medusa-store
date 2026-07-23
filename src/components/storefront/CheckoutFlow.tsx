@@ -2,14 +2,18 @@
 
 import { CheckCircle2, CreditCard, Loader2, LogIn, ShieldCheck, Smartphone, UserRound } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { type CartWithItems } from "@/lib/db/cart";
+import { type CartResponse } from "@/lib/utils/cart";
+import { medusaSdk } from "@/lib/medusa/sdk";
+import { createCheckoutService, finalizeVerifiedCheckout } from "@/lib/medusa/checkout";
+import { useCart } from "@/lib/medusa/cart/CartProvider";
 import { formatMoney } from "@/lib/utils/money";
 import type { GhanaMobileMoneyProvider } from "@/lib/integrations/paystack";
 
 type CheckoutFlowProps = {
-  cart: CartWithItems;
+  cart: CartResponse;
   isSignedIn: boolean;
   customer: { displayName: string; email: string; phone: string } | null;
+  medusa?: boolean;
 };
 
 const NETWORKS: { value: GhanaMobileMoneyProvider; label: string }[] = [
@@ -26,7 +30,7 @@ type ChargeState =
   | { status: "success"; orderNumber: string }
   | { status: "error"; message: string };
 
-export function CheckoutFlow({ cart, isSignedIn, customer }: CheckoutFlowProps) {
+export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false }: CheckoutFlowProps) {
   const [guestChosen, setGuestChosen] = useState(false);
   const [email, setEmail] = useState(customer?.email ?? "");
   const [phone, setPhone] = useState(customer?.phone ?? "+233 ");
@@ -37,12 +41,24 @@ export function CheckoutFlow({ cart, isSignedIn, customer }: CheckoutFlowProps) 
   const [otp, setOtp] = useState("");
   const [charge, setCharge] = useState<ChargeState>({ status: "idle" });
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const completingRef = useRef(false);
+  const { resetAfterCheckout } = useCart();
 
   useEffect(() => {
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (!medusa || !cart.id || typeof window === "undefined") return;
+    const returning = new URLSearchParams(window.location.search).get("paystack_return") === "1";
+    const pending = window.localStorage.getItem("begnon_pending_checkout_cart") === cart.id;
+    if (!returning && !pending) return;
+    confirmAndCompleteMedusa(cart.id).catch((cause) => setCharge({ status: "error", message: cause instanceof Error ? cause.message : "Payment confirmation is still pending." }));
+    // Cart identity is the stable resume key; this must run once per mounted checkout.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [medusa, cart.id]);
 
   function pollForConfirmation(orderNumber: string) {
     let attempts = 0;
@@ -72,6 +88,42 @@ export function CheckoutFlow({ cart, isSignedIn, customer }: CheckoutFlowProps) 
   const showForm = isSignedIn || guestChosen;
   const canSubmit = Boolean(email.trim()) && Boolean(address.trim());
 
+  async function confirmAndCompleteMedusa(cartId: string) {
+    if (completingRef.current) return;
+    completingRef.current = true;
+    setCharge({ status: "awaiting_approval", reference: cartId, orderNumber: cartId, message: "Confirming your payment securely..." });
+    try {
+      const checkout = createCheckoutService(medusaSdk.store);
+      await finalizeVerifiedCheckout({
+        cartId,
+        waitUntilPaid: checkout.waitUntilPaid,
+        complete: checkout.complete,
+        resetAfterCheckout,
+        clearPending: () => window.localStorage.removeItem("begnon_pending_checkout_cart"),
+        redirect: (orderId) => { window.location.href = `/confirmations?order=${encodeURIComponent(orderId)}`; },
+      });
+    } finally {
+      completingRef.current = false;
+    }
+  }
+
+  async function completeMedusaPayment(channel: "card" | "mobile_money") {
+    if (!cart.id) throw new Error("Your cart is unavailable.");
+    const checkout = createCheckoutService(medusaSdk.store);
+    const prepared = await checkout.prepare(cart.id, { email, phone, address, displayName: customer?.displayName });
+    const callbackUrl = `${window.location.origin}/checkout?paystack_return=1`;
+    const payment = await checkout.initiate(prepared, channel, callbackUrl, channel === "mobile_money" ? { provider: momoProvider, phone: momoPhone.trim() } : undefined);
+    window.localStorage.setItem("begnon_pending_checkout_cart", cart.id);
+    if (payment.accessCode) {
+      const { default: PaystackPop } = await import("@paystack/inline-js");
+      new PaystackPop().resumeTransaction(payment.accessCode, { onSuccess: () => { confirmAndCompleteMedusa(cart.id!).catch((cause) => setCharge({ status: "error", message: cause instanceof Error ? cause.message : "Payment confirmation is pending." })); }, onCancel: () => setCharge({ status: "error", message: "Payment was cancelled." }) });
+      return;
+    }
+    if (payment.authorizationUrl) { window.location.href = payment.authorizationUrl; return; }
+    setCharge({ status: "awaiting_approval", reference: payment.session.id, orderNumber: cart.id, message: "Approve the payment prompt. We will complete the order only after Paystack is verified." });
+    confirmAndCompleteMedusa(cart.id).catch((cause) => setCharge({ status: "error", message: cause instanceof Error ? cause.message : "Payment confirmation is pending." }));
+  }
+
   async function payWithMobileMoney() {
     if (!canSubmit || !momoPhone.trim()) {
       setCharge({ status: "error", message: "Add your email, delivery address, and Mobile Money number." });
@@ -79,6 +131,11 @@ export function CheckoutFlow({ cart, isSignedIn, customer }: CheckoutFlowProps) 
     }
 
     setCharge({ status: "submitting" });
+
+    if (medusa) {
+      try { await completeMedusaPayment("mobile_money"); } catch (cause) { setCharge({ status: "error", message: cause instanceof Error ? cause.message : "Unable to start checkout." }); }
+      return;
+    }
 
     try {
       const response = await fetch("/api/paystack/charge", {
@@ -176,6 +233,11 @@ export function CheckoutFlow({ cart, isSignedIn, customer }: CheckoutFlowProps) 
     }
 
     setCharge({ status: "submitting" });
+
+    if (medusa) {
+      try { await completeMedusaPayment("card"); } catch (cause) { setCharge({ status: "error", message: cause instanceof Error ? cause.message : "Unable to start checkout." }); }
+      return;
+    }
 
     try {
       const response = await fetch("/api/checkout", {
@@ -332,7 +394,7 @@ export function CheckoutFlow({ cart, isSignedIn, customer }: CheckoutFlowProps) 
                 </div>
               ) : (
                 <div className="checkout-form">
-                  <p className="muted-copy">Card details are entered securely in Paystack's payment window — we never see or store your card number.</p>
+                  <p className="muted-copy">Card details are entered securely in Paystack&apos;s payment window — we never see or store your card number.</p>
                   <button className="pay-button" disabled={charge.status === "submitting" || !canSubmit} onClick={payWithCard}>
                     <CreditCard size={18} />
                     {charge.status === "submitting" ? "Starting..." : `Pay ${formatMoney(cart.totals.total)}`}
