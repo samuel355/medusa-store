@@ -15,6 +15,7 @@ import {
   Timer,
   Truck,
 } from "lucide-react";
+import Image from "next/image";
 import { AppShell } from "@/components/store/AppShell";
 import { getActiveProducts, type StoreProduct } from "@/lib/db/products";
 import { getActiveCategories, type StoreCategory } from "@/lib/db/categories";
@@ -112,7 +113,7 @@ export default async function Home() {
                 </div>
                 {slide.image ? (
                   <div className="store-slide-media">
-                    <img src={slide.image} alt="" />
+                    <Image src={slide.image} alt="" fill sizes="(max-width: 768px) 60vw, 340px" priority={index === 0} />
                   </div>
                 ) : null}
               </article>
@@ -151,7 +152,7 @@ export default async function Home() {
         <div className="featured-product-grid">
           {featuredProducts.map((product) => (
             <a className="featured-product-card" href={`/products/${product.slug}`} key={product.slug}>
-              <img src={product.image} alt={product.name} />
+              <Image src={product.image} alt={product.name} width={400} height={348} sizes="(max-width: 768px) 45vw, 22vw" />
               <span>{product.category}{product.subcategory ? ` / ${product.subcategory}` : ""}</span>
               <h3>{product.name}</h3>
               <strong>{formatMoney(product.price)}</strong>
@@ -174,7 +175,7 @@ export default async function Home() {
             {dealProducts.map((deal, index) => (
               <a className="deal-card" href={`/products/${deal.slug}`} key={deal.slug}>
                 <div className={`deal-art deal-${index + 1}`}>
-                  <img src={deal.image} alt={deal.name} />
+                  <Image src={deal.image} alt={deal.name} fill sizes="(max-width: 768px) 45vw, 22vw" />
                 </div>
                 <span>{discountLabel(deal)}</span>
                 <h3>{deal.name}</h3>

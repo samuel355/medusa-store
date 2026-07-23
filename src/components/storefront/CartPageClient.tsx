@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowRight, CreditCard, Minus, PackageCheck, Plus, ShieldCheck, ShoppingBag, Trash2, Truck } from "lucide-react";
+import Image from "next/image";
 import type { CartItem } from "@/lib/utils/cart";
 import { useCart } from "@/lib/medusa/cart";
 import { formatMoney } from "@/lib/utils/money";
@@ -54,7 +55,7 @@ export function CartPageClient() {
         {cart.map((item) => (
           <article className="cart-row" key={item.id}>
             <a className="cart-row-image" href={`/products/${item.slug}`}>
-              <img src={item.image} alt={item.name} />
+              <Image src={item.image} alt={item.name} fill sizes="76px" />
             </a>
             <div>
               <a href={`/products/${item.slug}`}>

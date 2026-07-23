@@ -1,7 +1,7 @@
 ---
 id: commerce-005
 scope: customer-identity
-status: pending
+status: ready
 depends-on: [commerce-003]
 ---
 

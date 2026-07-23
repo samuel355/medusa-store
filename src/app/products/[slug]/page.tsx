@@ -1,4 +1,5 @@
 import { ArrowLeft, BadgeCheck, CreditCard, PackageCheck, RotateCcw, ShieldCheck, Star, Truck } from "lucide-react";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/store/AppShell";
 import { ProductPurchasePanel } from "@/components/storefront/ProductPurchasePanel";
@@ -43,13 +44,13 @@ export default async function ProductDetailsPage({ params }: { params: Promise<{
         <div className="product-detail-grid">
           <div className="product-gallery">
             <div className="product-main-image">
-              <img src={product.image} alt={product.name} />
+              <Image src={product.image} alt={product.name} fill sizes="(max-width: 768px) 100vw, 50vw" priority />
               <span>{product.badge}</span>
             </div>
             <div className="product-thumbs">
               {galleryImages.slice(0, 3).map((image, index) => (
                 <span key={`${image}-${index}`}>
-                  <img src={image} alt={`${product.name} view ${index + 1}`} />
+                  <Image src={image} alt={`${product.name} view ${index + 1}`} fill sizes="120px" />
                 </span>
               ))}
             </div>
@@ -216,7 +217,7 @@ export default async function ProductDetailsPage({ params }: { params: Promise<{
             {relatedProducts.map((item, index) => (
               <a className="deal-card" href={`/products/${item.slug}`} key={item.slug}>
                 <div className={`deal-art deal-${(index % 4) + 1}`}>
-                  <img src={item.image} alt={item.name} />
+                  <Image src={item.image} alt={item.name} fill sizes="(max-width: 768px) 45vw, 22vw" />
                 </div>
                 <span>{item.badge}</span>
                 <h3>{item.name}</h3>

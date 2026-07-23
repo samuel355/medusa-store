@@ -196,47 +196,6 @@ export async function cancelOrder(orderId: string, customerId: string) {
   return rows.length > 0;
 }
 
-export async function listAllOrders(): Promise<OrderSummary[]> {
-  const sql = getSql();
-  const rows = await sql<
-    {
-      id: string;
-      order_number: string;
-      status: string;
-      payment_status: string;
-      fulfillment_status: string;
-      total_amount: number;
-      currency: string;
-      placed_at: string;
-      items_summary: string | null;
-      item_count: string;
-    }[]
-  >`
-    select
-      o.id, o.order_number, o.status, o.payment_status, o.fulfillment_status,
-      o.total_amount, o.currency, o.placed_at,
-      string_agg(oi.title, ', ') as items_summary,
-      count(oi.id) as item_count
-    from medusastore.orders o
-    left join medusastore.order_items oi on oi.order_id = o.id
-    group by o.id
-    order by o.placed_at desc
-    limit 200
-  `;
-
-  return rows.map((row) => ({
-    id: row.id,
-    orderNumber: row.order_number,
-    status: row.status,
-    paymentStatus: row.payment_status,
-    fulfillmentStatus: row.fulfillment_status,
-    total: row.total_amount / 100,
-    currency: row.currency,
-    placedAt: row.placed_at,
-    itemsSummary: row.items_summary ?? "",
-    itemCount: Number(row.item_count),
-  }));
-}
 
 export async function updateOrderStatus(
   orderId: string,

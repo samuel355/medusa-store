@@ -14,6 +14,7 @@ import {
   Truck,
   UserRound,
 } from "lucide-react";
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { type Customer } from "@/lib/db/customers";
 import { fetchOrders, type OrderSummary } from "@/lib/utils/orders";
@@ -261,7 +262,7 @@ export function CustomerAccountClient({ view = "overview" }: Readonly<{ view?: C
             <div className="featured-product-grid">
               {wishlist.map((item) => (
                 <a className="featured-product-card" href={`/products/${item.slug}`} key={item.productId}>
-                  <img src={item.image} alt={item.name} />
+                  <Image src={item.image} alt={item.name} width={400} height={348} sizes="(max-width: 768px) 45vw, 22vw" />
                   <span>{item.category}</span>
                   <h3>{item.name}</h3>
                   <strong>{formatMoney(item.price)}</strong>

@@ -41,11 +41,12 @@ test("polls resumable payment state and stops on captured", async () => {
   assert.equal(reads, 2);
 });
 
-test("passes Mobile Money details and rejects unsupported OTP action", async () => {
+test("passes Mobile Money details through and returns the popup access code like card", async () => {
   let body: Record<string, unknown> | undefined;
-  const otpSession = { id: "payses_1", provider_id: PAYSTACK_PROVIDER_ID, data: { status: "send_otp" } };
-  const sdk = { cart: { retrieve: async () => ({ cart }), update: async () => ({ cart }), addShippingMethod: async () => ({ cart }), complete: async () => ({}) }, fulfillment: { listCartOptions: async () => ({ shipping_options: [] }) }, payment: { initiatePaymentSession: async (_cart: unknown, value: Record<string, unknown>) => { body = value; return { payment_collection: { payment_sessions: [otpSession] } }; } } } as never;
-  await assert.rejects(() => createCheckoutService(sdk).initiate(cart as never, "mobile_money", "https://shop.test/checkout", { provider: "mtn", phone: "0240000000" }), /requires OTP/);
+  const momoSession = { id: "payses_1", provider_id: PAYSTACK_PROVIDER_ID, data: { access_code: "momo_access" } };
+  const sdk = { cart: { retrieve: async () => ({ cart }), update: async () => ({ cart }), addShippingMethod: async () => ({ cart }), complete: async () => ({}) }, fulfillment: { listCartOptions: async () => ({ shipping_options: [] }) }, payment: { initiatePaymentSession: async (_cart: unknown, value: Record<string, unknown>) => { body = value; return { payment_collection: { payment_sessions: [momoSession] } }; } } } as never;
+  const result = await createCheckoutService(sdk).initiate(cart as never, "mobile_money", "https://shop.test/checkout", { provider: "mtn", phone: "0240000000" });
+  assert.equal(result.accessCode, "momo_access");
   assert.deepEqual((body?.data as Record<string, unknown>).mobile_money, { provider: "mtn", phone: "0240000000" });
 });
 

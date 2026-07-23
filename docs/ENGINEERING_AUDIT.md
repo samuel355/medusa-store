@@ -43,11 +43,9 @@
    - Reject duplicate webhook processing.
    - Update order/payment status transactionally.
 
-5. Add admin/product management.
-   - Product CRUD.
-   - Inventory adjustments.
-   - Order status controls.
-   - Image upload to R2.
+5. ~~Add admin/product management~~ — resolved: `/admin` now redirects recognized store
+   admins straight to MedusaJS's own Admin dashboard, which already provides product
+   CRUD, image upload, inventory, and order management. No custom Next.js admin UI needed.
 
 6. Add testing.
    - Unit test payment signature verification.

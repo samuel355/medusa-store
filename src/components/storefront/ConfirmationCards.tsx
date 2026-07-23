@@ -13,17 +13,17 @@ export function ConfirmationCards() {
   const [isLoading, setIsLoading] = useState(Boolean(orderNumber));
 
   useEffect(() => {
-    if (!orderNumber) {
-      setIsLoading(false);
-      return;
-    }
+    if (!orderNumber) return;
     fetchOrderByNumber(orderNumber).then((result) => {
       setOrder(result);
       setIsLoading(false);
     });
   }, [orderNumber]);
 
-  if (isLoading) return null;
+  // isLoading only ever applies while there's an order to fetch; deriving it here
+  // (instead of forcing it false from inside the effect) also correctly stops the
+  // loading state immediately if orderNumber is ever cleared mid-fetch.
+  if (orderNumber && isLoading) return null;
 
   if (!order) {
     return (

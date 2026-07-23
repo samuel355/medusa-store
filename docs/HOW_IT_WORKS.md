@@ -44,8 +44,8 @@ Medusa and is read directly from Supabase either way.
 |---|---|---|
 | **Guest shopper** | No account | Browse, search, add to cart, check out without an account, track an order by number |
 | **Customer** | Supabase Auth — phone OTP, email/password, or Google OAuth | Everything a guest can, plus saved addresses*, order history, wishlist, notification preferences |
-| **Admin** | Same Supabase Auth, plus a row in `medusastore.admin_users` | Everything a customer can, plus `/admin`: order list, order status/fulfillment updates, read-only product list |
-| **Backend operator** | Medusa Admin (separate app at the Medusa backend's `/app`) | Full commerce management: products, inventory, regions, payment provider config — this is MedusaJS's own admin dashboard, not part of the Next.js app |
+| **Admin** | Same Supabase Auth, plus a row in `medusastore.admin_users`, then Medusa's own Admin login | Everything a customer can; visiting `/admin` verifies they're a recognized store admin, then sends them straight to Medusa's Admin dashboard for actual store management |
+| **Backend operator** | Medusa Admin (separate app at the Medusa backend's `/app`) | Full commerce management: products (create/edit, image upload), inventory, regions, orders, payment provider config — this is MedusaJS's own admin dashboard, the single place all admin management happens |
 
 \* Address book CRUD isn't built yet — checkout takes a single free-text delivery address
 today (see `docs/FULLSTACK_ROADMAP.md` open gaps).
@@ -154,15 +154,21 @@ the customer won't get an SMS or fulfillment update until a worker picks it up.
 
 ## 6. Admin flow
 
-`/admin` (Next.js, gated by `medusastore.admin_users`) is intentionally lightweight:
+Medusa is the single place admin management happens — there's no parallel custom admin UI
+to keep in sync. `/admin` (Next.js) is just a gate + redirect:
 
-- Dashboard: revenue/order/product summary tiles.
-- Order list with status + fulfillment updates.
-- Read-only product list (no create/edit yet — that lives in Medusa's own Admin app).
+1. Verifies the visitor is signed in via Supabase Auth.
+2. Verifies they have a row in `medusastore.admin_users`.
+3. Redirects to `NEXT_PUBLIC_MEDUSA_ADMIN_URL` — Medusa's own Admin dashboard (a separate
+   app served by the Medusa backend, e.g. `http://localhost:9000/app/dashboard`), which has
+   its own login/session, independent of Supabase Auth.
 
-Full catalogue and inventory management happens in **MedusaJS's own Admin dashboard**
-(a separate app served by the Medusa backend, e.g. `http://localhost:9000/app`), not inside
-this Next.js `/admin` page.
+Everything a store admin needs — products (create/edit, image upload), inventory, pricing,
+regions, orders and their status, payment provider configuration — is managed there, not in
+a Next.js page. An earlier version of `/admin` read orders directly from the legacy
+Supabase `orders` table; that was a real gap once checkout started creating Medusa orders
+(see `docs/plan/tasks/commerce-004.md`) — those orders were invisible to it. Routing
+straight to Medusa's dashboard removes that blind spot rather than patching it.
 
 ## 7. Where things live (quick map)
 

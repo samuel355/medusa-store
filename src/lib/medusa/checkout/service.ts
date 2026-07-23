@@ -51,7 +51,12 @@ export function createCheckoutService(sdk: CheckoutSdkBoundary) {
       }, { fields: "*payment_sessions" });
       const session = response.payment_collection.payment_sessions?.find((candidate) => candidate.provider_id === PAYSTACK_PROVIDER_ID);
       if (!session) throw new MedusaCheckoutError("initialize payment", "Medusa did not return the Paystack payment session.");
-      if (session.data?.status === "send_otp") throw new MedusaCheckoutError("additional payment action", "This Paystack Mobile Money transaction requires OTP submission, which this provider does not support safely yet.");
+      // Standard Checkout (`/transaction/initialize`, used for both channels) always
+      // returns an access code/authorization URL, never a synchronous charge status like
+      // "send_otp" — that status only exists on Paystack's separate Direct Charge API,
+      // which this provider does not call. Paystack's own popup/hosted page collects the
+      // Mobile Money network, number, and any OTP/approval step itself; no extra action
+      // is required here for either channel.
       return { cart, session, accessCode: typeof session.data?.access_code === "string" ? session.data.access_code : null, authorizationUrl: typeof session.data?.authorization_url === "string" ? session.data.authorization_url : null };
     }),
 

@@ -1658,6 +1658,7 @@ textarea:focus {
 }
 
 .deal-art {
+  position: relative;
   height: 112px;
   border-radius: 7px;
   background: linear-gradient(145deg, #f4752c, #7a2f0d);
@@ -3237,6 +3238,7 @@ select {
 }
 
 .product-thumbs span {
+  position: relative;
   height: 78px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -7383,6 +7385,7 @@ strong,
 }
 
 .cart-row-image {
+  position: relative;
   width: 76px;
   height: 76px;
   border-radius: 10px;
@@ -7745,6 +7748,7 @@ strong,
 }
 
 .store-slide-media {
+  position: relative;
   display: flex;
   flex: 0 0 auto;
   align-items: center;

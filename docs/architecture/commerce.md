@@ -49,8 +49,7 @@ Arkesel notifications ◄── Medusa subscribers
 - Server reads may use Next.js caching. Customer, cart, checkout, and payment state must not use shared public caches.
 - The browser persists only the Medusa cart ID. Cart contents and totals are always rehydrated from Medusa.
 - One Cart Context owns client cart state for the header, product actions, cart page, and checkout.
-- During migration only, Medusa cart consumer activation remains behind an explicit flag that defaults to legacy checkout compatibility. `commerce-004` removes the compatibility mode and switches cart plus checkout atomically.
-- `NEXT_PUBLIC_MEDUSA_CART_ENABLED=false` is the compatibility default. Set it to `true` only when deploying the `commerce-004` checkout migration in the same release.
+- `commerce-004` is done: cart and checkout switched to Medusa atomically. `NEXT_PUBLIC_MEDUSA_CART_ENABLED=true` is the live configuration; the legacy data source in `src/lib/medusa/cart/CartProvider.tsx` remains only as a fallback until `commerce-007` removes it.
 - Direct storefront writes to commerce SQL tables are forbidden after the owning migration task completes.
 - Paystack secrets and webhook verification exist only in the Medusa backend. Next.js may render provider-required actions but cannot own payment truth.
 - A Medusa order is created only by cart completion after payment authorization; Paystack callbacks cannot create parallel storefront orders.

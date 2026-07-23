@@ -1,6 +1,7 @@
 "use client";
 
 import { BadgeCheck, Bell, Heart, PackageCheck, Search, ShoppingBag, SlidersHorizontal, Star, X } from "lucide-react";
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { type StoreProduct } from "@/lib/db/products";
 import { useCart } from "@/lib/medusa/cart";
@@ -63,6 +64,10 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
     const queryParam = params.get("q");
     const storedQuery = window.localStorage.getItem("begnon_search");
     if (categoryParam && departments.includes(categoryParam)) {
+      // window.location/localStorage don't exist during SSR, so the first client
+      // render must match the server's default-filter render before applying these
+      // browser-only values — this has to happen in an effect, not during render.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCategory(categoryParam);
     }
     if (queryParam) {
@@ -199,9 +204,15 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
   const pageCount = Math.max(1, Math.ceil(products.length / pageSize));
   const paginatedProducts = products.slice((page - 1) * pageSize, page * pageSize);
 
-  useEffect(() => {
+  // Reset to page 1 whenever the filters change, adjusted directly during render
+  // (React's documented alternative to an effect for this) instead of an effect,
+  // so the reset applies before this render commits rather than one tick later.
+  const filterKey = JSON.stringify([activePill, availability, brand, category, color, delivery, discount, fabric, fit, occasion, priceBand, query, size, sort]);
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+  if (filterKey !== prevFilterKey) {
+    setPrevFilterKey(filterKey);
     setPage(1);
-  }, [activePill, availability, brand, category, color, delivery, discount, fabric, fit, occasion, priceBand, query, size, sort]);
+  }
 
   async function addToCart(product: StoreProduct) {
     const defaultSize = product.sizes[0];
@@ -483,7 +494,7 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
                   <Heart size={17} />
                 </button>
                 <a className={`wholesale-art shop-product-art product-${index + 1}`} href={`/products/${product.slug}`}>
-                  <img src={product.image} alt={product.name} />
+                  <Image src={product.image} alt={product.name} fill sizes="(max-width: 768px) 45vw, 22vw" />
                   <div className="shop-product-badges">
                     <span>{product.badge}</span>
                     {discountPercent > 0 ? <span>-{discountPercent}%</span> : null}

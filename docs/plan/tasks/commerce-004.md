@@ -1,7 +1,7 @@
 ---
 id: commerce-004
 scope: medusa-checkout-paystack
-status: blocked
+status: done
 depends-on: [commerce-003]
 ---
 
@@ -89,3 +89,29 @@ Move shipping, checkout, Paystack payment state, and order completion into Medus
 - The cart accepted a test Ghana address and the Store API returned two applicable shipping options.
 - Repeated attempts to attach the selected shipping option returned no usable response; retrieving the cart still reported zero shipping methods.
 - Payment-session initialization was not attempted because an attached shipping method is a required checkout invariant. No authorization or financial operation occurred, and the activation flag remains false.
+
+### Root-cause fix and full live verification (2026-07-23)
+
+- Found and fixed the actual reason the storefront cart never used Medusa in the browser: `isMedusaCartEnabled` (`src/lib/medusa/cart/config.ts`) read `NEXT_PUBLIC_MEDUSA_CART_ENABLED` off an indirect `environment` parameter rather than a literal `process.env.NEXT_PUBLIC_...` expression, so Next.js never inlined the flag into client bundles. It silently evaluated `false` in every browser session regardless of the real env value, so every "add to cart" fell back to the legacy Postgres cart with Medusa-format variant IDs and hard-failed with a Postgres UUID type error. Fixed by capturing the literal expression at module scope.
+- Found and fixed a second bug: cart mutations could race the initial cart create/retrieve call (`CartController.mutate`), throwing "Medusa cart is not initialized" on a fast click right after page load. Mutations now await initialization first.
+- With both fixed, ran the full purchase path against a live Medusa backend (Postgres + Redis reachable, Paystack `sk_test_` key confirmed) end to end, through the real browser UI: add to cart → cart → guest checkout → Ghana address → shipping method attached → card payment → Paystack Inline popup (test-mode "Success" simulator, no real charge) → signed `charge.success` webhook delivered to `/hooks/payment/paystack_paystack` (Paystack cannot reach a local backend, so the webhook was constructed from Paystack's own independently-verified transaction data and signed with the real secret key) → payment session reached `authorized` → `cart.complete()` created exactly one Medusa order (`paid_total` matched the cart total) → confirmation lookup (`/api/orders/:id`) retrieved it correctly.
+- Confirmed the legacy `medusastore.orders` row count was identical before and after completion — no parallel legacy order was created.
+- Rebuilt the backend for production (`medusa build`) and started it via the real `npm run start` script; confirmed `/health`, `/app`, and a hashed admin asset all return 200 with env correctly loaded from `apps/backend/.env` after the script's `cd` into `.medusa/server`. This closes the previously-unresolved production-start/Admin-asset concern from the 2026-07-18 review.
+- All four blockers from the 2026-07-18 independent review are now proven: signed webhook state advancement, single-order completion, no legacy duplicate, and a working production backend build/start.
+- `NEXT_PUBLIC_MEDUSA_CART_ENABLED` is `true` in the storefront environment.
+
+### Mobile Money OTP re-investigated and fixed (2026-07-23)
+
+- The `send_otp` guard in `checkout/service.ts` (from the 2026-07-23 update above) was
+  itself based on an incorrect assumption. Standard Checkout (`/transaction/initialize`,
+  what this provider actually calls for both `card` and `mobile_money`) never returns a
+  synchronous `status: "send_otp"` — that shape only exists on Paystack's separate Direct
+  Charge API (`/charge`, `/charge/submit_otp`), which this provider does not use. Paystack's
+  own Inline popup/hosted page collects the Mobile Money network, number, and any
+  OTP/approval step itself, exactly as it does for card entry.
+- Live-verified: a Ghana Mobile Money (MTN) test transaction through the real popup
+  progressed through "authorizing" → "Payment Successful" with zero custom UI on our side,
+  then completed to exactly one Medusa order via the same webhook-gated path already proven
+  for card, with no legacy duplicate order.
+- Removed the incorrect guard rather than building a redundant custom OTP flow. Mobile
+  Money and card now share the exact same, already-correct code path.
