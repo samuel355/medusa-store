@@ -25,20 +25,31 @@ test("initializes Paystack and completes only to a Medusa order", async () => {
   assert.equal((await service.complete("cart_1")).id, "order_1");
 });
 
-test("never completes before Medusa reports authorization", async () => {
+test("relies on Medusa's own live authorization, not a locally-cached session status", async () => {
+  // Medusa's complete-cart workflow authorizes the payment session itself by calling the
+  // provider, which live-verifies with Paystack directly — it does not need the cart's
+  // local session status to already say "authorized" (that only happens via webhook, which
+  // may never reach a local/dev backend). So `complete` must call sdk.cart.complete even
+  // when the last-known local status is still "pending".
   let completed = 0;
   const pendingCart = { ...cart, payment_collection: { payment_sessions: [{ id: "payses_1", provider_id: PAYSTACK_PROVIDER_ID, status: "pending" }] } };
-  const sdk = { cart: { retrieve: async () => ({ cart: pendingCart }), update: async () => ({ cart }), addShippingMethod: async () => ({ cart }), complete: async () => { completed += 1; return { type: "order", order: { id: "order_1" } }; } }, fulfillment: { listCartOptions: async () => ({ shipping_options: [] }) }, payment: {} } as never;
-  await assert.rejects(() => createCheckoutService(sdk).complete("cart_1"), /authorized/);
-  assert.equal(completed, 0);
+  const sdk = { cart: { retrieve: async () => ({ cart: pendingCart }), update: async () => ({ cart }), addShippingMethod: async () => ({ cart }), complete: async () => { completed += 1; return { type: "order" as const, order: { id: "order_1" } }; } }, fulfillment: { listCartOptions: async () => ({ shipping_options: [] }) }, payment: {} } as never;
+  const order = await createCheckoutService(sdk).complete("cart_1");
+  assert.equal(order.id, "order_1");
+  assert.equal(completed, 1);
 });
 
-test("polls resumable payment state and stops on captured", async () => {
-  let reads = 0;
-  const sdk = { cart: { retrieve: async () => ({ cart: { ...cart, payment_collection: { payment_sessions: [{ id: "payses_1", provider_id: PAYSTACK_PROVIDER_ID, status: ++reads === 2 ? "captured" : "pending" }] } } }), update: async () => ({ cart }), addShippingMethod: async () => ({ cart }), complete: async () => ({}) }, fulfillment: { listCartOptions: async () => ({ shipping_options: [] }) }, payment: {} } as never;
-  const session = await createCheckoutService(sdk).waitUntilPaid("cart_1", { attempts: 2, sleep: async () => {} });
-  assert.equal(session.status, "captured");
-  assert.equal(reads, 2);
+test("surfaces Medusa's own decision when it declines to complete the cart", async () => {
+  const sdk = { cart: { retrieve: async () => ({ cart }), update: async () => ({ cart }), addShippingMethod: async () => ({ cart }), complete: async () => ({ type: "cart" as const, error: { message: "Payment authorization failed" } }) }, fulfillment: { listCartOptions: async () => ({ shipping_options: [] }) }, payment: {} } as never;
+  await assert.rejects(() => createCheckoutService(sdk).complete("cart_1"), /authorization failed/);
+});
+
+test("waitUntilPaid retries Medusa's own live authorization until it succeeds", async () => {
+  let attempts = 0;
+  const sdk = { cart: { retrieve: async () => ({ cart }), update: async () => ({ cart }), addShippingMethod: async () => ({ cart }), complete: async () => { attempts += 1; return attempts < 2 ? { type: "cart" as const, error: { message: "Payment authorization failed" } } : { type: "order" as const, order: { id: "order_1" } }; } }, fulfillment: { listCartOptions: async () => ({ shipping_options: [] }) }, payment: {} } as never;
+  const result = await createCheckoutService(sdk).waitUntilPaid("cart_1", { attempts: 3, sleep: async () => {} });
+  assert.equal(result.type, "order");
+  assert.equal(attempts, 2);
 });
 
 test("passes Mobile Money details through and returns the popup access code like card", async () => {

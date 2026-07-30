@@ -4,13 +4,13 @@ import { cookies } from "next/headers";
 import { readEnv } from "@/lib/env";
 
 export function createBrowserSupabaseClient() {
-  return createBrowserClient(readEnv("NEXT_PUBLIC_SUPABASE_URL"), readEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"));
+  return createBrowserClient(readEnv("NEXT_PUBLIC_SUPABASE_URL"), readEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"));
 }
 
 export async function createServerSupabaseClient() {
   const cookieStore = await cookies();
 
-  return createServerClient(readEnv("NEXT_PUBLIC_SUPABASE_URL"), readEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"), {
+  return createServerClient(readEnv("NEXT_PUBLIC_SUPABASE_URL"), readEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"), {
     cookies: {
       getAll() {
         return cookieStore.getAll();

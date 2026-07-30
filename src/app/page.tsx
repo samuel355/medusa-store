@@ -1,249 +1,151 @@
-import {
-  ArrowRight,
-  Briefcase,
-  CreditCard,
-  Cpu,
-  Grid3X3,
-  Headset,
-  Home as HomeIcon,
-  Package,
-  RotateCcw,
-  Shirt,
-  Smartphone,
-  Sparkles,
-  Tag,
-  Timer,
-  Truck,
-} from "lucide-react";
+import { ArrowRight, CreditCard, Headset, RotateCcw, ShieldCheck, Truck } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { AppShell } from "@/components/store/AppShell";
+import { HomeHero } from "@/components/storefront/HomeHero";
+import { ProductCard } from "@/components/storefront/ProductCard";
 import { getActiveProducts, type StoreProduct } from "@/lib/db/products";
-import { getActiveCategories, type StoreCategory } from "@/lib/db/categories";
-import { getActiveHeroBanners } from "@/lib/db/hero";
-import { formatMoney } from "@/lib/utils/money";
+import { getActiveCategories } from "@/lib/db/categories";
 import { storeBrand } from "@/lib/store/brand";
 
-function discountLabel(product: StoreProduct) {
-  if (!product.oldPrice || product.oldPrice <= product.price) return "";
-  const percent = Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100);
-  return `-${percent}%`;
-}
+const UNDER_PRICE_CEDIS = 200;
 
-function categoryIcon(name: string) {
-  const key = name.toLowerCase();
-  if (key.includes("electronic")) return Cpu;
-  if (key.includes("fashion") || key.includes("apparel")) return Shirt;
-  if (key.includes("beauty") || key.includes("personal")) return Sparkles;
-  if (key.includes("home") || key.includes("kitchen")) return HomeIcon;
-  if (key.includes("phone")) return Smartphone;
-  if (key.includes("office")) return Briefcase;
-  if (key.includes("packaging")) return Package;
-  return Tag;
-}
+function buildShopByTiles(products: StoreProduct[], categories: { id: string; name: string }[]) {
+  const byCategory = (name: string) => {
+    const category = categories.find((candidate) => candidate.name === name);
+    if (!category) return [];
+    return products.filter((product) => product.categoryId === category.id);
+  };
 
-function categoryProductCount(category: StoreCategory, products: StoreProduct[]) {
-  return products.filter((product) => product.categoryId === category.id).length;
+  const candidates = [
+    { label: "Men", href: "/shop?category=Men", matches: byCategory("Men") },
+    { label: "Women", href: "/shop?category=Women", matches: byCategory("Women") },
+    {
+      label: "New Arrivals",
+      href: "/shop?pill=New%20arrivals",
+      matches: products.filter((product) => product.isNewArrival),
+    },
+    {
+      label: `Under GH₵${UNDER_PRICE_CEDIS}`,
+      href: `/shop?price=${encodeURIComponent(`Under GH₵${UNDER_PRICE_CEDIS}`)}`,
+      matches: products.filter((product) => product.price < UNDER_PRICE_CEDIS),
+    },
+  ];
+
+  // Only tiles backed by real, currently-in-stock matches are shown — an empty
+  // tile (e.g. a merchandising segment with no live products yet) is worse than
+  // no tile at all.
+  const usedImages = new Set<string>();
+  return candidates
+    .filter((tile) => tile.matches.length > 0)
+    .map((tile) => {
+      // Prefer a product image not already used by an earlier tile, so a small
+      // catalogue doesn't render the same photo across every "Shop by" card.
+      const product = tile.matches.find((candidate) => !usedImages.has(candidate.image)) ?? tile.matches[0];
+      usedImages.add(product.image);
+      return { label: tile.label, href: tile.href, count: tile.matches.length, image: product.image };
+    });
 }
 
 export default async function Home() {
-  const [products, categories, heroBanners] = await Promise.all([
-    getActiveProducts(),
-    getActiveCategories(),
-    getActiveHeroBanners(),
-  ]);
-
+  const [products, categories] = await Promise.all([getActiveProducts(), getActiveCategories()]);
   const featuredProducts = products.slice(0, 8);
-  const categoryCards = categories.slice(0, 8);
-  const trendingProducts = [...products]
-    .sort((a, b) => b.popularity - a.popularity)
-    .slice(0, 6);
-  const dealProducts = products.filter((product) => product.discountEligible).slice(0, 4);
-
-  const slides =
-    heroBanners.length > 0
-      ? heroBanners.map((banner) => ({
-          key: banner.id,
-          eyebrow: banner.subtitle || "Begnon",
-          title: banner.title,
-          cta: banner.ctaLabel || "Shop now",
-          href: banner.ctaHref,
-          meta: "",
-          image: banner.imageUrl,
-        }))
-      : featuredProducts.slice(0, 3).map((product) => ({
-          key: product.id,
-          eyebrow: product.badge || "New arrival",
-          title: product.name,
-          cta: "Shop now",
-          href: `/products/${product.slug}`,
-          meta: formatMoney(product.price),
-          image: product.image,
-        }));
+  const heroProduct = products[0];
+  const shopByTiles = buildShopByTiles(products, categories);
 
   return (
-    <AppShell className="storefront">
-      <section className="store-hero">
-        <aside id="categories" className="department-panel" aria-label="Departments">
-          <div className="panel-title">
-            <Grid3X3 size={18} />
-            Shop categories
-          </div>
-          {categories.map((category) => (
-            <a href={`/shop?category=${encodeURIComponent(category.name)}`} key={category.id}>
-              <span>{category.name}</span>
-              <ArrowRight size={15} />
-            </a>
-          ))}
-        </aside>
+    <AppShell className="storefront home">
+      <HomeHero featured={heroProduct} />
 
-        <div className="hero-carousel" aria-label="Featured store campaigns">
-          <div className="hero-track">
-            {slides.map((slide, index) => (
-              <article className={`store-slide slide-${index + 1}`} key={slide.key}>
-                <div className="store-slide-copy">
-                  <p>{slide.eyebrow}</p>
-                  <h1>{slide.title}</h1>
-                  <div className="hero-market-actions">
-                    <a className="primary-action" href={slide.href}>
-                      {slide.cta}
-                      <ArrowRight size={18} />
-                    </a>
-                    {slide.meta ? <strong>{slide.meta}</strong> : null}
-                  </div>
+      {shopByTiles.length > 0 ? (
+        <section className="ed-section ed-categories">
+          <p className="ed-eyebrow">Shop by</p>
+          <div className="ed-shopby-row">
+            {shopByTiles.map((tile) => (
+              <Link href={tile.href} key={tile.label} className="ed-shopby-tile">
+                <Image src={tile.image} alt="" fill sizes="(max-width: 1000px) 50vw, 25vw" />
+                <div className="ed-shopby-scrim" />
+                <div className="ed-shopby-copy">
+                  <strong>{tile.label}</strong>
+                  <span>
+                    {tile.count} {tile.count === 1 ? "item" : "items"}
+                  </span>
                 </div>
-                {slide.image ? (
-                  <div className="store-slide-media">
-                    <Image src={slide.image} alt="" fill sizes="(max-width: 768px) 60vw, 340px" priority={index === 0} />
-                  </div>
-                ) : null}
-              </article>
-            ))}
-          </div>
-          <div className="carousel-dots" aria-hidden="true">
-            <span />
-            <span />
-            <span />
-          </div>
-        </div>
-      </section>
-
-      <section className="hero-trends store-trends">
-        <strong>Trending</strong>
-        <div>
-          {trendingProducts.map((product) => (
-            <a href={`/products/${product.slug}`} key={product.id}>
-              {product.name}
-            </a>
-          ))}
-        </div>
-      </section>
-
-      <section className="market-section featured-store-products">
-        <div className="market-section-head">
-          <div>
-            <p className="kicker">New in</p>
-            <h2>Fresh arrivals</h2>
-          </div>
-          <a href="/shop">
-            View all products
-            <ArrowRight size={17} />
-          </a>
-        </div>
-        <div className="featured-product-grid">
-          {featuredProducts.map((product) => (
-            <a className="featured-product-card" href={`/products/${product.slug}`} key={product.slug}>
-              <Image src={product.image} alt={product.name} width={400} height={348} sizes="(max-width: 768px) 45vw, 22vw" />
-              <span>{product.category}{product.subcategory ? ` / ${product.subcategory}` : ""}</span>
-              <h3>{product.name}</h3>
-              <strong>{formatMoney(product.price)}</strong>
-            </a>
-          ))}
-        </div>
-      </section>
-
-      {dealProducts.length > 0 ? (
-        <section id="deals" className="deal-strip">
-          <div className="deal-copy">
-            <p className="kicker">Flash sale</p>
-            <h2>Weekend deals.</h2>
-            <span>
-              <Timer size={17} />
-              Limited stock
-            </span>
-          </div>
-          <div className="deal-grid">
-            {dealProducts.map((deal, index) => (
-              <a className="deal-card" href={`/products/${deal.slug}`} key={deal.slug}>
-                <div className={`deal-art deal-${index + 1}`}>
-                  <Image src={deal.image} alt={deal.name} fill sizes="(max-width: 768px) 45vw, 22vw" />
-                </div>
-                <span>{discountLabel(deal)}</span>
-                <h3>{deal.name}</h3>
-                <p>
-                  {formatMoney(deal.price)} {deal.oldPrice ? <s>{formatMoney(deal.oldPrice)}</s> : null}
-                </p>
-              </a>
+              </Link>
             ))}
           </div>
         </section>
       ) : null}
 
-      <section className="market-section trust-strip">
-        <div className="market-section-head">
+      <section className="ed-section">
+        <div className="ed-section-head">
           <div>
-            <p className="kicker">Why Begnon</p>
-            <h2>Built for fast, trustworthy checkout.</h2>
+            <p className="ed-eyebrow">New in</p>
+            <h2>Fresh picks from the store</h2>
           </div>
+          <Link href="/shop">
+            Shop all
+            <ArrowRight size={15} />
+          </Link>
         </div>
-        <div className="product-confidence-grid">
-          <article>
-            <CreditCard size={24} />
-            <h2>Mobile Money & card</h2>
-            <p>Paystack-powered checkout supports Mobile Money and cards, confirmed instantly by signed webhook.</p>
-          </article>
-          <article>
-            <Truck size={24} />
-            <h2>Delivery you can track</h2>
-            <p>Every order gets a real order number with live status on the tracking page from confirmation to delivery.</p>
-          </article>
-          <article>
-            <Headset size={24} />
-            <h2>SMS order updates</h2>
-            <p>Payment and delivery updates are sent by SMS so you always know where your order stands.</p>
-          </article>
-          <article>
-            <RotateCcw size={24} />
-            <h2>Easy exchanges</h2>
-            <p>Reach us at {storeBrand.phone} or {storeBrand.email}. Support hours: {storeBrand.hours}.</p>
-          </article>
+        <div className="ed-product-grid">
+          {featuredProducts.map((product, index) => (
+            <ProductCard key={product.slug} product={product} priority={index < 4} />
+          ))}
         </div>
       </section>
 
-      <section className="market-section category-showcase">
-        <div className="market-section-head">
-          <div>
-            <p className="kicker">Departments</p>
-            <h2>Shop categories</h2>
-          </div>
-        </div>
-        <div className="category-card-grid">
-          {categoryCards.map((category) => {
-            const Icon = categoryIcon(category.name);
-            const count = categoryProductCount(category, products);
-            return (
-              <a href={`/shop?category=${encodeURIComponent(category.name)}`} key={category.id}>
-                <span className="category-card-icon">
-                  <Icon size={20} />
-                </span>
-                <strong>{category.name}</strong>
-                <small>{count} {count === 1 ? "product" : "products"}</small>
-                <ArrowRight size={17} />
-              </a>
-            );
-          })}
-        </div>
+      <section className="ed-value-band">
+        <p className="ed-eyebrow">{storeBrand.tagline}</p>
+        <h2>One trusted checkout for everything you love.</h2>
+        <p>
+          {`From fashion to electronics, beauty to home essentials — ${storeBrand.name} brings Ghana's everyday shopping into one storefront with Mobile Money-first checkout and delivery you can track from confirmation to doorstep.`}
+        </p>
+        <Link className="ed-text-link" href="/shop">
+          Explore the shop
+          <ArrowRight size={16} />
+        </Link>
       </section>
 
+      <section className="ed-trust-row">
+        <div>
+          <CreditCard size={20} />
+          <div>
+            <strong>Mobile Money & card</strong>
+            <span>Paystack checkout, confirmed instantly by signed webhook.</span>
+          </div>
+        </div>
+        <div>
+          <Truck size={20} />
+          <div>
+            <strong>Delivery you can track</strong>
+            <span>Live status from confirmation to delivery.</span>
+          </div>
+        </div>
+        <div>
+          <ShieldCheck size={20} />
+          <div>
+            <strong>Verified products</strong>
+            <span>Clear pricing, no surprise fees at checkout.</span>
+          </div>
+        </div>
+        <div>
+          <Headset size={20} />
+          <div>
+            <strong>SMS order updates</strong>
+            <span>Payment and delivery updates sent by SMS.</span>
+          </div>
+        </div>
+        <div>
+          <RotateCcw size={20} />
+          <div>
+            <strong>Easy exchanges</strong>
+            <span>
+              {storeBrand.phone} · {storeBrand.hours}
+            </span>
+          </div>
+        </div>
+      </section>
     </AppShell>
   );
 }

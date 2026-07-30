@@ -1,6 +1,5 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { AppHero } from "@/components/store/AppHero";
 import { AppShell } from "@/components/store/AppShell";
 import { CheckoutFlow } from "@/components/storefront/CheckoutFlow";
 import { MedusaCheckoutLoader } from "@/components/storefront/MedusaCheckoutLoader";
@@ -25,21 +24,22 @@ export default async function CheckoutPage() {
   }
 
   return (
-    <AppShell className="app-page checkout-page">
-      <AppHero
-        kicker="Checkout"
-        title="Almost there."
-        description="Confirm your details and choose Mobile Money or card to complete your order."
-      />
-      {medusaEnabled ? <MedusaCheckoutLoader isSignedIn={Boolean(user)} customer={customer ? { displayName: customer.displayName, email: customer.email, phone: customer.phone } : null} /> : <CheckoutFlow
-        cart={cart!}
-        isSignedIn={Boolean(user)}
-        customer={
-          customer
-            ? { displayName: customer.displayName, email: customer.email, phone: customer.phone }
-            : null
-        }
-      />}
+    <AppShell className="ed-page">
+      <div className="ed-checkout-page">
+        <div className="ed-checkout-heading">
+          <p className="ed-eyebrow">Checkout</p>
+          <h1>Almost there.</h1>
+        </div>
+        {medusaEnabled ? <MedusaCheckoutLoader isSignedIn={Boolean(user)} customer={customer ? { displayName: customer.displayName, email: customer.email, phone: customer.phone } : null} /> : <CheckoutFlow
+          cart={cart!}
+          isSignedIn={Boolean(user)}
+          customer={
+            customer
+              ? { displayName: customer.displayName, email: customer.email, phone: customer.phone }
+              : null
+          }
+        />}
+      </div>
     </AppShell>
   );
 }

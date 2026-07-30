@@ -31,10 +31,17 @@ export function mapMedusaOrder(order: HttpTypes.StoreOrder): OrderDetail {
 }
 
 export async function getMedusaOrderById(orderId: string): Promise<OrderDetail | null> {
-  if (!orderId.startsWith("order_")) return null;
+  // Only the "order_" prefix is case-insensitive here — a caller that uppercases
+  // user input (e.g. the tracking page's search box) still matches. The ULID
+  // suffix is intentionally left untouched: Medusa generates it uppercase, and
+  // lowercasing the whole string (as an earlier version of this function did)
+  // silently breaks every lookup since the ID becomes case-mismatched.
+  const match = /^order_(.+)$/i.exec(orderId.trim());
+  if (!match) return null;
+  const id = `order_${match[1]}`;
   try {
     const { medusaSdk } = await import("./sdk");
-    const { order } = await medusaSdk.store.order.retrieve(orderId, { fields: "+payment_status,+fulfillment_status,*items,*shipping_address" });
+    const { order } = await medusaSdk.store.order.retrieve(id, { fields: "+payment_status,+fulfillment_status,*items,*shipping_address" });
     return mapMedusaOrder(order);
   } catch {
     return null;

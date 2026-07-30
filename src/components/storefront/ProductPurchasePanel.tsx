@@ -46,14 +46,11 @@ export function ProductPurchasePanel({
   }
 
   return (
-    <div className="purchase-panel">
-      <div>
-        <span>Price</span>
-        <strong>{formatMoney(product.price)}</strong>
-      </div>
+    <div className="ed-buybox">
+      <span className="ed-buybox-availability">{product.stock}</span>
       {hasSizes ? (
-        <label>
-          Size
+        <label className="ed-buybox-field">
+          <span>Size</span>
           <select value={size} onChange={(event) => setSize(event.target.value)}>
             {product.sizes.map((item) => (
               <option key={item}>{item}</option>
@@ -62,8 +59,8 @@ export function ProductPurchasePanel({
         </label>
       ) : null}
       {hasColors ? (
-        <label>
-          Color
+        <label className="ed-buybox-field">
+          <span>Color</span>
           <select value={color} onChange={(event) => setColor(event.target.value)}>
             {product.colors.map((item) => (
               <option key={item}>{item}</option>
@@ -71,41 +68,32 @@ export function ProductPurchasePanel({
           </select>
         </label>
       ) : null}
-      <div>
-        <span>Availability</span>
-        <strong>{product.stock}</strong>
-      </div>
-      <div className="quantity-stepper">
+      <div className="ed-qty-stepper">
         <button aria-label="Decrease quantity" onClick={() => setQuantity((current) => Math.max(1, current - 1))}>
-          <Minus size={16} />
+          <Minus size={15} />
         </button>
         <strong>{quantity}</strong>
         <button aria-label="Increase quantity" onClick={() => setQuantity((current) => current + 1)}>
-          <Plus size={16} />
+          <Plus size={15} />
         </button>
       </div>
-      <div className="purchase-actions">
-        <button className="secondary-action" disabled={isSubmitting} onClick={addItems}>
-          <ShoppingBag size={18} />
-          Add to cart
+      <div className="ed-buybox-actions">
+        <button className="ed-btn-outline" disabled={isSubmitting} onClick={addItems}>
+          <ShoppingBag size={16} />
+          Add to bag
         </button>
-        <button className="pay-button" disabled={isSubmitting} onClick={buyNow}>
-          <Zap size={18} />
+        <button className="ed-btn-solid" disabled={isSubmitting} onClick={buyNow}>
+          <Zap size={16} />
           Buy now
         </button>
       </div>
-      {hasSizes || hasColors ? (
-        <small className="purchase-selection">
-          Selected: {[size, color].filter(Boolean).join(" / ")}
-        </small>
-      ) : null}
       {message ? (
-        <p className="inline-notice purchase-notice">
-          <CheckCircle2 size={16} />
+        <p className="ed-buybox-notice">
+          <CheckCircle2 size={15} />
           {message} <a href="/cart">View cart</a>
         </p>
       ) : null}
-      {cartError ? <p className="inline-notice" role="alert">{cartError.message}</p> : null}
+      {cartError ? <p className="ed-buybox-notice" role="alert">{cartError.message}</p> : null}
     </div>
   );
 }

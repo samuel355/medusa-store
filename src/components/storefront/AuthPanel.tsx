@@ -87,29 +87,25 @@ export function AuthPanel({ initialMode = "login" }: AuthPanelProps) {
   }
 
   return (
-    <div id="auth" className="auth-band inline-auth">
-      <div>
-        <p className="kicker">Customer account</p>
-        <h2>{mode === "signup" ? "Create your account." : "Welcome back."}</h2>
-        <p>Save orders, addresses, wishlist items, returns, and delivery updates.</p>
-        {message ? <p className="inline-notice">{message}</p> : null}
+    <div id="auth" className="ed-auth">
+      <p className="ed-eyebrow">Customer account</p>
+      <h1>{mode === "signup" ? "Create your account." : "Welcome back."}</h1>
+      <p className="ed-checkout-sub">Save orders, addresses, wishlist items, returns, and delivery updates.</p>
+      {message ? <p className="ed-notice">{message}</p> : null}
+
+      <div className="ed-checkout-tabs" role="tablist" aria-label="Login methods">
+        {["Phone", "Email", "Google"].map((item) => (
+          <button className={method === item ? "is-active" : ""} key={item} onClick={() => setMethod(item)}>
+            {item === "Phone" ? <Smartphone size={15} /> : item === "Email" ? <Mail size={15} /> : <UserRound size={15} />}
+            {item}
+          </button>
+        ))}
       </div>
-      <div className="login-card">
-        <div className="auth-card-head">
-          <strong>{mode === "signup" ? "Create account" : "Login"}</strong>
-          <span>{method === "Phone" ? "Use SMS verification" : method === "Email" ? "Use your email and password" : "Use your Google account"}</span>
-        </div>
-        <div className="login-tabs" role="tablist" aria-label="Login methods">
-          {["Phone", "Email", "Google"].map((item) => (
-            <button className={method === item ? "active" : ""} key={item} onClick={() => setMethod(item)}>
-              {item === "Phone" ? <Smartphone size={16} /> : item === "Email" ? <Mail size={16} /> : <UserRound size={16} />}
-              {item}
-            </button>
-          ))}
-        </div>
+
+      <div className="ed-checkout-form">
         {method !== "Google" ? (
-          <label>
-            {method === "Phone" ? "Mobile number" : "Email address"}
+          <label className="ed-buybox-field">
+            <span>{method === "Phone" ? "Mobile number" : "Email address"}</span>
             <input
               type={method === "Phone" ? "tel" : "email"}
               placeholder={method === "Phone" ? "+233 24 000 0000" : "customer@begnon.com"}
@@ -118,8 +114,8 @@ export function AuthPanel({ initialMode = "login" }: AuthPanelProps) {
             />
           </label>
         ) : (
-          <div className="google-auth-card">
-            <UserRound size={20} />
+          <div className="ed-google-auth">
+            <UserRound size={18} />
             <div>
               <strong>Continue with Google</strong>
               <span>Secure OAuth sign-in for your Begnon account.</span>
@@ -127,8 +123,8 @@ export function AuthPanel({ initialMode = "login" }: AuthPanelProps) {
           </div>
         )}
         {method === "Phone" && otpSent ? (
-          <label>
-            Verification code
+          <label className="ed-buybox-field">
+            <span>Verification code</span>
             <input
               inputMode="numeric"
               placeholder="6-digit code"
@@ -139,8 +135,8 @@ export function AuthPanel({ initialMode = "login" }: AuthPanelProps) {
         ) : null}
         {method === "Email" ? (
           <>
-            <label>
-              Password
+            <label className="ed-buybox-field">
+              <span>Password</span>
               <input
                 type="password"
                 placeholder="At least 8 characters"
@@ -148,16 +144,16 @@ export function AuthPanel({ initialMode = "login" }: AuthPanelProps) {
                 onChange={(event) => setPassword(event.target.value)}
               />
             </label>
-            <div className="login-tabs compact-tabs" role="tablist" aria-label="Email auth mode">
+            <div className="ed-checkout-tabs ed-auth-mode-tabs" role="tablist" aria-label="Email auth mode">
               {(["login", "signup"] as const).map((item) => (
-                <button className={mode === item ? "active" : ""} key={item} onClick={() => setMode(item)}>
+                <button className={mode === item ? "is-active" : ""} key={item} onClick={() => setMode(item)}>
                   {item === "login" ? "Login" : "Sign up"}
                 </button>
               ))}
             </div>
           </>
         ) : null}
-        <button className="primary-action full-width" disabled={isSubmitting} onClick={submit}>
+        <button className="ed-btn-solid" disabled={isSubmitting} onClick={submit}>
           {isSubmitting
             ? "Please wait..."
             : method === "Phone"
@@ -169,15 +165,16 @@ export function AuthPanel({ initialMode = "login" }: AuthPanelProps) {
                 : mode === "signup"
                   ? "Create account"
                   : "Login"}
-          {otpSent ? <CheckCircle2 size={18} /> : method === "Phone" ? <Smartphone size={18} /> : <ArrowRight size={18} />}
+          {otpSent ? <CheckCircle2 size={16} /> : method === "Phone" ? <Smartphone size={16} /> : <ArrowRight size={16} />}
         </button>
-        <p className="auth-secure-note">Protected checkout, order tracking, and wishlist sync.</p>
-        <div className="auth-switch-row">
-          {mode === "login" ? "New here?" : "Already have an account?"}
-          <a href={mode === "login" ? "/register" : "/login"}>
-            {mode === "login" ? "Create account" : "Login"}
-          </a>
-        </div>
+      </div>
+
+      <p className="ed-checkout-secure">Protected checkout, order tracking, and wishlist sync.</p>
+      <div className="ed-auth-switch">
+        {mode === "login" ? "New here?" : "Already have an account?"}
+        <a href={mode === "login" ? "/register" : "/login"}>
+          {mode === "login" ? "Create account" : "Login"}
+        </a>
       </div>
     </div>
   );

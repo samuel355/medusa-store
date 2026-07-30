@@ -4,7 +4,7 @@ import { isAdminAuthUser } from "@/lib/db/customers";
 import { readEnv } from "@/lib/env";
 
 export default async function AdminPage() {
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
     redirect("/login");
   }
 

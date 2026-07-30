@@ -1,7 +1,9 @@
-import { ArrowLeft, BadgeCheck, CreditCard, PackageCheck, RotateCcw, ShieldCheck, Star, Truck } from "lucide-react";
-import Image from "next/image";
+import { ArrowLeft, CreditCard, RotateCcw, Truck } from "lucide-react";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/store/AppShell";
+import { ProductCard } from "@/components/storefront/ProductCard";
+import { ProductGallery } from "@/components/storefront/ProductGallery";
 import { ProductPurchasePanel } from "@/components/storefront/ProductPurchasePanel";
 import { getActiveProducts, getProductBySlug, getRelatedProducts } from "@/lib/db/products";
 import { formatMoney } from "@/lib/utils/money";
@@ -29,202 +31,98 @@ export default async function ProductDetailsPage({ params }: { params: Promise<{
     notFound();
   }
 
-  const galleryImages = product.images.length ? product.images : [product.image, product.image, product.image];
+  const galleryImages = product.images.length ? product.images : [product.image];
   const relatedProducts = await getRelatedProducts(product.categoryId, product.id, 4);
-  const hasSizeOrColor = product.sizes.length > 0 || product.colors.length > 0;
-  const hasFabricOrCare = Boolean(product.fabric || product.care);
+
+  const specs = [
+    product.brand ? { label: "Brand", value: product.brand } : null,
+    product.fit ? { label: "Fit", value: product.fit } : null,
+    product.fabric ? { label: "Fabric", value: product.fabric } : null,
+    product.care ? { label: "Care", value: product.care } : null,
+    product.delivery ? { label: "Delivery", value: product.delivery } : null,
+    product.warranty ? { label: "Warranty", value: product.warranty } : null,
+  ].filter((entry): entry is { label: string; value: string } => Boolean(entry));
 
   return (
-    <AppShell className="product-page">
-      <section className="product-detail-shell">
-        <a className="back-link" href="/shop">
-          <ArrowLeft size={17} />
+    <AppShell className="ed-page">
+      <section className="ed-product">
+        <Link className="ed-back-link" href="/shop">
+          <ArrowLeft size={15} />
           Back to products
-        </a>
-        <div className="product-detail-grid">
-          <div className="product-gallery">
-            <div className="product-main-image">
-              <Image src={product.image} alt={product.name} fill sizes="(max-width: 768px) 100vw, 50vw" priority />
-              <span>{product.badge}</span>
-            </div>
-            <div className="product-thumbs">
-              {galleryImages.slice(0, 3).map((image, index) => (
-                <span key={`${image}-${index}`}>
-                  <Image src={image} alt={`${product.name} view ${index + 1}`} fill sizes="120px" />
-                </span>
-              ))}
-            </div>
-          </div>
+        </Link>
 
-          <article className="product-info-panel">
-            <p className="kicker">{product.category}</p>
-            <h1>{product.name}</h1>
-            <div className="product-rating-row">
-              <span>
-                <Star size={16} fill="currentColor" />
-                {product.rating}
+        <div className="ed-product-grid-layout">
+          <ProductGallery images={galleryImages} alt={product.name} />
+
+          <div className="ed-product-main">
+            <article className="ed-product-info">
+              <em>{product.brand || product.category}</em>
+              <h1>{product.name}</h1>
+              <span className="ed-product-price">
+                {formatMoney(product.price)}
+                {product.oldPrice ? <s>{formatMoney(product.oldPrice)}</s> : null}
               </span>
-              <span>{product.orders}</span>
-              <span>{product.stock}</span>
-            </div>
-            <p>{product.description}</p>
-            <div className="product-price-row">
-              <strong>{formatMoney(product.price)}</strong>
-              {product.oldPrice ? <s>{formatMoney(product.oldPrice)}</s> : null}
-            </div>
-            {product.highlights.length > 0 ? (
-              <div className="product-highlights">
-                {product.highlights.map((highlight) => (
-                  <span key={highlight}>
-                    <BadgeCheck size={16} />
-                    {highlight}
-                  </span>
-                ))}
-              </div>
-            ) : null}
-            <div className="product-attribute-grid">
-              {product.brand ? (
-                <span>
-                  <small>Brand</small>
-                  {product.brand}
-                </span>
+              <p>{product.description}</p>
+              {product.highlights.length > 0 ? (
+                <ul className="ed-highlight-list">
+                  {product.highlights.map((highlight) => (
+                    <li key={highlight}>{highlight}</li>
+                  ))}
+                </ul>
               ) : null}
-              {product.fit ? (
-                <span>
-                  <small>Fit</small>
-                  {product.fit}
-                </span>
-              ) : null}
-              {product.fabric ? (
-                <span>
-                  <small>Fabric</small>
-                  {product.fabric}
-                </span>
-              ) : null}
-              {product.sku ? (
-                <span>
-                  <small>SKU</small>
-                  {product.sku}
-                </span>
-              ) : null}
-            </div>
-          </article>
+            </article>
 
-          <aside className="product-buy-box">
             <ProductPurchasePanel product={product} />
-            <div className="product-service-list">
-              {product.delivery ? (
-                <span>
-                  <Truck size={17} /> {product.delivery}
-                </span>
-              ) : null}
-              <span>
-                <CreditCard size={17} /> Mobile Money primary, card ready
-              </span>
-              {product.warranty ? (
-                <span>
-                  <ShieldCheck size={17} /> {product.warranty}
-                </span>
-              ) : null}
-              <span>
-                <PackageCheck size={17} /> SMS, WhatsApp, and email updates
-              </span>
-            </div>
-          </aside>
+
+            {specs.length > 0 ? (
+              <dl className="ed-spec-list">
+                {specs.map((spec) => (
+                  <div key={spec.label}>
+                    <dt>{spec.label}</dt>
+                    <dd>{spec.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            ) : null}
+          </div>
         </div>
       </section>
 
-      {hasSizeOrColor || hasFabricOrCare ? (
-        <section className="product-fashion-grid">
-          {hasSizeOrColor ? (
-            <article>
-              <h2>Size and color</h2>
-              {product.sizes.length > 0 ? (
-                <div className="fashion-chip-row">
-                  {product.sizes.map((size) => (
-                    <span key={size}>{size}</span>
-                  ))}
-                </div>
-              ) : null}
-              {product.colors.length > 0 ? (
-                <div className="fashion-chip-row">
-                  {product.colors.map((color) => (
-                    <span key={color}>{color}</span>
-                  ))}
-                </div>
-              ) : null}
-              {product.occasion.length > 0 ? <p>Fit: {product.fit}. Occasion: {product.occasion.join(", ")}.</p> : null}
-            </article>
-          ) : null}
-          {product.branchStock.length > 0 ? (
-            <article>
-              <h2>Branch stock</h2>
-              <div className="branch-stock-list">
-                {product.branchStock.map((stock) => (
-                  <span key={stock.location}>
-                    <strong>{stock.location}</strong>
-                    {stock.quantity} available
-                    {stock.quantity <= stock.lowStockThreshold ? " / low stock" : ""}
-                  </span>
-                ))}
-              </div>
-            </article>
-          ) : null}
-          {hasFabricOrCare ? (
-            <article>
-              <h2>Fabric and care</h2>
-              <p>{[product.fabric, product.care].filter(Boolean).join(". ")}</p>
-              {product.weight ? <p>Weight: {product.weight}g. Status: {product.status}.</p> : null}
-            </article>
-          ) : null}
-          <article>
-            <h2>Reviews</h2>
-            <p>
-              Rated {product.rating}/5 from verified customers. Customers highlight sizing accuracy, fabric feel, and
-              delivery communication.
-            </p>
-          </article>
-        </section>
-      ) : null}
-
-      <section className="product-confidence-grid">
-        <article>
-          <CreditCard size={24} />
-          <h2>Local checkout</h2>
-          <p>Mobile Money is first in the checkout path, with card and bank transfer architecture prepared.</p>
-        </article>
-        <article>
-          <Truck size={24} />
-          <h2>Delivery clarity</h2>
-          <p>{product.delivery || "Delivery timelines are confirmed after checkout."} Tracking and confirmation pages keep the order visible.</p>
-        </article>
-        <article>
-          <RotateCcw size={24} />
-          <h2>Return promise</h2>
-          <p>{product.warranty || "Standard return policy applies."} Support details stay visible across the store footer.</p>
-        </article>
+      <section className="ed-trust-row ed-trust-row-3">
+        <div>
+          <CreditCard size={20} />
+          <div>
+            <strong>Local checkout</strong>
+            <span>Mobile Money first, card and bank transfer ready.</span>
+          </div>
+        </div>
+        <div>
+          <Truck size={20} />
+          <div>
+            <strong>Delivery clarity</strong>
+            <span>{product.delivery || "Delivery timelines are confirmed after checkout."}</span>
+          </div>
+        </div>
+        <div>
+          <RotateCcw size={20} />
+          <div>
+            <strong>Return promise</strong>
+            <span>{product.warranty || "Standard return policy applies."}</span>
+          </div>
+        </div>
       </section>
 
       {relatedProducts.length > 0 ? (
-        <section className="market-section related-products">
-          <div className="market-section-head">
+        <section className="ed-section">
+          <div className="ed-section-head">
             <div>
-              <p className="kicker">Keep shopping</p>
-              <h2>Related products.</h2>
+              <p className="ed-eyebrow">Keep shopping</p>
+              <h2>You may also like</h2>
             </div>
           </div>
-          <div className="deal-grid">
-            {relatedProducts.map((item, index) => (
-              <a className="deal-card" href={`/products/${item.slug}`} key={item.slug}>
-                <div className={`deal-art deal-${(index % 4) + 1}`}>
-                  <Image src={item.image} alt={item.name} fill sizes="(max-width: 768px) 45vw, 22vw" />
-                </div>
-                <span>{item.badge}</span>
-                <h3>{item.name}</h3>
-                <p>
-                  {formatMoney(item.price)} {item.oldPrice ? <s>{formatMoney(item.oldPrice)}</s> : null}
-                </p>
-              </a>
+          <div className="ed-product-grid">
+            {relatedProducts.map((item) => (
+              <ProductCard key={item.slug} product={item} />
             ))}
           </div>
         </section>

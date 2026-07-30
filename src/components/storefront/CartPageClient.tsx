@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, CreditCard, Minus, PackageCheck, Plus, ShieldCheck, ShoppingBag, Trash2, Truck } from "lucide-react";
+import { ArrowRight, Headset, Lock, Minus, Plus, ShieldCheck, ShoppingBag, Trash2, Truck } from "lucide-react";
 import Image from "next/image";
 import type { CartItem } from "@/lib/utils/cart";
 import { useCart } from "@/lib/medusa/cart";
@@ -28,115 +28,120 @@ export function CartPageClient() {
   }
 
   if (isLoading) {
-    return <section className="dashboard-panel cart-empty"><p>Loading your cart…</p></section>;
+    return <section className="ed-empty"><p>Loading your bag…</p></section>;
   }
 
   if (error && !cart.length) {
-    return <section className="dashboard-panel cart-empty"><h2>We couldn&apos;t load your cart.</h2><p>{error.message}</p></section>;
+    return <section className="ed-empty"><h2>We couldn&apos;t load your bag.</h2><p>{error.message}</p></section>;
   }
 
   if (!cart.length) {
     return (
-      <section className="dashboard-panel cart-empty">
-        <ShoppingBag size={34} />
-        <h2>Your cart is empty.</h2>
+      <section className="ed-empty">
+        <ShoppingBag size={28} />
+        <h2>Your bag is empty.</h2>
         <p>Add products from the shop, then return here to checkout.</p>
-        <a className="primary-action" href="/shop">
+        <a className="ed-text-link" href="/shop">
           Continue shopping
+          <ArrowRight size={16} />
         </a>
       </section>
     );
   }
 
   return (
-    <section className="cart-layout">
-      <div className="cart-items">
-        {error ? <p className="inline-notice" role="alert">{error.message}</p> : null}
+    <div className="ed-bag-grid">
+      <div className="ed-bag-items">
+        {error ? <p className="ed-notice" role="alert">{error.message}</p> : null}
         {cart.map((item) => (
-          <article className="cart-row" key={item.id}>
-            <a className="cart-row-image" href={`/products/${item.slug}`}>
-              <Image src={item.image} alt={item.name} fill sizes="76px" />
-            </a>
-            <div>
-              <a href={`/products/${item.slug}`}>
-                <strong>{item.name}</strong>
-              </a>
-              <span>{formatMoney(item.price)} each</span>
-              {(item.size || item.color) ? (
-                <small className="cart-variant-label">
-                  {[item.size, item.color].filter(Boolean).join(" / ")}
-                </small>
-              ) : null}
+          <article className="ed-bag-row" key={item.id}>
+            <span className="ed-bag-image">
+              <Image src={item.image} alt={item.name} fill sizes="120px" />
+            </span>
+            <div className="ed-bag-body">
+              <div className="ed-bag-top">
+                <a href={`/products/${item.slug}`}>
+                  <strong>{item.name}</strong>
+                  {(item.size || item.color) ? (
+                    <span className="ed-bag-meta">
+                      {item.color ? <>Color: {item.color}</> : null}
+                      {item.size && item.color ? " · " : null}
+                      {item.size ? <>Size: {item.size}</> : null}
+                    </span>
+                  ) : null}
+                </a>
+                <button
+                  className="ed-bag-remove"
+                  disabled={isMutating}
+                  aria-label={`Remove ${item.name}`}
+                  onClick={() => removeItem(item)}
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+              <div className="ed-bag-bottom">
+                <div className="ed-qty-stepper">
+                  <button disabled={isMutating} aria-label="Decrease quantity" onClick={() => updateQuantity(item, item.quantity - 1)}>
+                    <Minus size={14} />
+                  </button>
+                  <strong>{item.quantity}</strong>
+                  <button disabled={isMutating} aria-label="Increase quantity" onClick={() => updateQuantity(item, item.quantity + 1)}>
+                    <Plus size={14} />
+                  </button>
+                </div>
+                <span className="ed-bag-price">{formatMoney(item.lineTotal)}</span>
+              </div>
             </div>
-            <div className="quantity-stepper">
-              <button disabled={isMutating} aria-label="Decrease quantity" onClick={() => updateQuantity(item, item.quantity - 1)}>
-                <Minus size={16} />
-              </button>
-              <strong>{item.quantity}</strong>
-              <button disabled={isMutating} aria-label="Increase quantity" onClick={() => updateQuantity(item, item.quantity + 1)}>
-                <Plus size={16} />
-              </button>
-            </div>
-            <strong>{formatMoney(item.lineTotal)}</strong>
-            <button disabled={isMutating} className="icon-button" aria-label={`Remove ${item.name}`} onClick={() => removeItem(item)}>
-              <Trash2 size={17} />
-            </button>
           </article>
         ))}
+
+        <p className="ed-bag-policy">
+          Items can be returned or exchanged within 14 days of delivery, in original condition. Reach out any time —
+          support details are in the footer below.
+        </p>
       </div>
 
-      <aside className="checkout-panel cart-summary">
-        <div className="checkout-head">
+      <aside className="ed-bag-summary">
+        <h2>Order summary</h2>
+        <div className="ed-bag-summary-lines">
           <div>
-            <p className="kicker">Cart summary</p>
-            <h2>Ready to checkout</h2>
-            <span>Mobile Money first. Card ready too.</span>
-          </div>
-        </div>
-        <div className="cart-payment-card">
-          <CreditCard size={18} />
-          <div>
-            <strong>Mobile Money</strong>
-            <span>Fast local payment with order confirmation.</span>
-          </div>
-        </div>
-        <div className="checkout-lines">
-          <div>
-            <span>Items</span>
-            <strong>{totals.quantity}</strong>
+            <span>Subtotal ({totals.quantity} item{totals.quantity === 1 ? "" : "s"})</span>
+            <span>{formatMoney(totals.subtotal)}</span>
           </div>
           <div>
-            <span>Subtotal</span>
-            <strong>{formatMoney(totals.subtotal)}</strong>
+            <span>Estimated delivery</span>
+            <span>{formatMoney(totals.shipping)}</span>
           </div>
-          <div>
-            <span>Delivery</span>
-            <strong>{formatMoney(totals.shipping)}</strong>
-          </div>
-          <div>
+          <div className="ed-bag-summary-total">
             <span>Total</span>
-            <strong>{formatMoney(totals.total)}</strong>
+            <span>{formatMoney(totals.total)}</span>
           </div>
         </div>
-        <a className="pay-button" href="/checkout">
-          Proceed to checkout
-          <ArrowRight size={18} />
+
+        <a className="ed-btn-solid ed-bag-checkout" href="/checkout">
+          Checkout
+          <ArrowRight size={17} />
         </a>
-        <div className="checkout-trust cart-checkout-trust">
+        <p className="ed-bag-secure">
+          <Lock size={14} />
+          Secure checkout powered by Paystack
+        </p>
+
+        <div className="ed-bag-trust">
+          <span>
+            <Truck size={16} />
+            Same-day Accra
+          </span>
           <span>
             <ShieldCheck size={16} />
             Secure payment
           </span>
           <span>
-            <Truck size={16} />
-            Delivery updates
-          </span>
-          <span>
-            <PackageCheck size={16} />
-            Easy exchange
+            <Headset size={16} />
+            24/7 support
           </span>
         </div>
       </aside>
-    </section>
+    </div>
   );
 }

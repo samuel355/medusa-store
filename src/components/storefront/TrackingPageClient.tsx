@@ -1,6 +1,6 @@
 "use client";
 
-import { MapPin, PackageCheck, Search, Truck } from "lucide-react";
+import { MapPin, Package, PackageCheck, Search, Truck } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { fetchOrderByNumber, type OrderDetail } from "@/lib/utils/orders";
@@ -44,6 +44,14 @@ function buildTimeline(order: OrderDetail) {
   ];
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  not_fulfilled: "Processing",
+  queued: "Queued",
+  packed: "Packed",
+  shipped: "In transit",
+  delivered: "Delivered",
+};
+
 export function TrackingPageClient() {
   const searchParams = useSearchParams();
   const requestedOrder = searchParams.get("order") ?? "";
@@ -72,58 +80,90 @@ export function TrackingPageClient() {
 
   return (
     <>
-      <section className="tracking-toolbar">
-        <label>
-          <Search size={17} />
+      <section className="ed-track-search">
+        <p className="ed-eyebrow">Order tracking</p>
+        <h1>Track your order</h1>
+        <p className="ed-track-search-sub">Enter your order number to see exactly where it is in the delivery flow.</p>
+        <div className="ed-search ed-track-search-box">
+          <Search size={15} />
           <input
             aria-label="Order tracking lookup"
-            placeholder="Enter order number e.g. SOB-123456"
+            placeholder="e.g. order_01H..."
             value={lookup}
-            onChange={(event) => setLookup(event.target.value.toUpperCase())}
+            onChange={(event) => setLookup(event.target.value)}
+            onKeyDown={(event) => { if (event.key === "Enter") lookupOrder(); }}
           />
-        </label>
-        <button className="primary-action" onClick={lookupOrder}>
-          Track order
-        </button>
+          <button onClick={lookupOrder}>Find status</button>
+        </div>
       </section>
-      {message ? <p className="inline-notice tracking-message">{message}</p> : null}
+
+      {message ? <p className="ed-notice">{message}</p> : null}
+
       {!isLoading && order ? (
-        <section className="tracking-grid">
-          <article className="dashboard-panel">
-            <h2>{order.orderNumber}</h2>
-            <p className="tracking-summary">
-              {order.itemsSummary} · {formatMoney(order.total)}
-            </p>
-            <div className="timeline">
+        <section className="ed-track-grid">
+          <div className="ed-track-timeline">
+            <div className="ed-track-timeline-head">
+              <h2>Shipment status</h2>
+              <span className="ed-track-status-pill">{STATUS_LABELS[order.fulfillmentStatus] ?? order.fulfillmentStatus}</span>
+            </div>
+            <div>
               {buildTimeline(order).map((event) => (
-                <div className={event.state} key={event.title}>
-                  <span />
+                <div className={`ed-track-timeline-item ${event.state}`} key={event.title}>
+                  <span className="ed-track-timeline-dot">{event.state === "active" ? <span /> : null}</span>
                   <div>
-                    <strong>{event.title}</strong>
-                    <p>{event.description}</p>
-                    <small>{event.time}</small>
+                    <p className="ed-track-timeline-time">{event.time}</p>
+                    <p className="ed-track-timeline-title">{event.title}</p>
+                    <p className="ed-track-timeline-desc">{event.description}</p>
                   </div>
                 </div>
               ))}
             </div>
-          </article>
-          <article className="dashboard-panel">
-            <h2>Delivery details</h2>
-            <div className="detail-list">
-              <span>
-                <MapPin size={17} /> {(order.shippingAddress.line1 as string | undefined) ?? "Address on file"}
-              </span>
-              <span>
-                <PackageCheck size={17} /> {order.status}
-              </span>
-              <span>
-                <Truck size={17} /> Fulfillment: {order.fulfillmentStatus}
-              </span>
+          </div>
+
+          <div className="ed-track-details-col">
+            <div>
+              <h3>Delivery details</h3>
+              <div className="ed-track-detail-row">
+                <MapPin size={16} />
+                <span>{(order.shippingAddress.line1 as string | undefined) ?? "Address on file"}</span>
+              </div>
+              <div className="ed-track-detail-row">
+                <PackageCheck size={16} />
+                <span>Order status: {order.status}</span>
+              </div>
+              <div className="ed-track-detail-row">
+                <Truck size={16} />
+                <span>Same-day Accra, next-day nationwide</span>
+              </div>
+              <dl className="ed-spec-list">
+                <div>
+                  <dt>Order value</dt>
+                  <dd>{formatMoney(order.total)}</dd>
+                </div>
+                <div>
+                  <dt>Items</dt>
+                  <dd>{order.itemCount}</dd>
+                </div>
+              </dl>
             </div>
-          </article>
+
+            <div>
+              <h3>Items in this order</h3>
+              {order.items.map((item) => (
+                <div className="ed-track-item-row" key={item.sku}>
+                  <Package size={16} />
+                  <div>
+                    <strong>{item.title}</strong>
+                    <span>Qty {item.quantity}</span>
+                  </div>
+                  <strong>{formatMoney(item.lineTotal)}</strong>
+                </div>
+              ))}
+            </div>
+          </div>
         </section>
       ) : !isLoading ? (
-        <section className="dashboard-panel empty-results">
+        <section className="ed-empty">
           <h2>Enter an order number to see tracking.</h2>
           <p>You can find your order number in your order history or confirmation email.</p>
         </section>

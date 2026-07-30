@@ -2,6 +2,7 @@
 
 import { Grid3X3, Heart, ListFilter, Search, ShoppingBag, UserRound, X } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { storeBrand } from "@/lib/store/brand";
 import { BrandMark } from "@/components/store/BrandMark";
@@ -14,6 +15,7 @@ type StoreHeaderClientProps = {
 };
 
 export function StoreHeaderClient({ isSignedIn, isAdmin, accountHref }: StoreHeaderClientProps) {
+  const router = useRouter();
   const { cart } = useCart();
   const cartCount = cart.totals.quantity;
   const [query, setQuery] = useState("");
@@ -21,8 +23,13 @@ export function StoreHeaderClient({ isSignedIn, isAdmin, accountHref }: StoreHea
 
   function search(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    window.localStorage.setItem("begnon_search", query);
-    window.location.href = "/shop";
+    const trimmed = query.trim();
+    if (trimmed) {
+      window.localStorage.setItem("begnon_search", trimmed);
+    } else {
+      window.localStorage.removeItem("begnon_search");
+    }
+    router.push("/shop");
   }
 
   const navLinks = [
@@ -30,48 +37,39 @@ export function StoreHeaderClient({ isSignedIn, isAdmin, accountHref }: StoreHea
     { href: "/shop?category=Men", label: "Men" },
     { href: "/shop?category=Women", label: "Women" },
     { href: "/shop?category=New%20Arrivals", label: "New Arrivals" },
-    { href: "/shop?category=Best%20Sellers", label: "Best Sellers" },
     { href: "/shop?category=Sale", label: "Sale" },
-    { href: "/shop?category=Collections", label: "Collections" },
-    { href: "/#deals", label: "Flash deals" },
   ];
 
   return (
-    <header className="market-header">
-      <div className="market-top">
+    <header className="topbar">
+      <div className="topbar-inner">
         <Link className="brand" href="/">
           <span className="brand-mark">
             <BrandMark size={30} />
           </span>
           {storeBrand.name}
         </Link>
-        <form className="market-search" role="search" onSubmit={search}>
-          <button>Shop</button>
+        <form className="search-bar" role="search" onSubmit={search}>
+          <Search size={18} aria-hidden="true" />
           <input
             aria-label="Search products"
             placeholder="Search shirts, dresses, kaftans, sizes..."
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
-          <button aria-label="Search">
-            <Search size={20} />
-            Search
-          </button>
+          <button type="submit">Search</button>
         </form>
-        <div className="market-actions">
-          <a href={accountHref}>
+        <div className="nav-actions">
+          <Link href={accountHref} aria-label={isAdmin ? "Dashboard" : "Account"} title={isAdmin ? "Dashboard" : "Account"}>
             <UserRound size={18} />
-            {isAdmin ? "Dashboard" : "Account"}
-          </a>
-          <a href="/customers/wishlist">
+          </Link>
+          <Link href="/customers/wishlist" aria-label="Wishlist" title="Wishlist">
             <Heart size={18} />
-            Wishlist
-          </a>
-          <a className="cart-link" href="/cart">
+          </Link>
+          <Link className="cart-button" href="/cart" aria-label={`Cart, ${cartCount} item${cartCount === 1 ? "" : "s"}`} title="Cart">
             <ShoppingBag size={18} />
-            Cart
             <span>{cartCount}</span>
-          </a>
+          </Link>
           <button
             className="icon-button mobile-menu"
             aria-expanded={isMenuOpen}
@@ -82,39 +80,41 @@ export function StoreHeaderClient({ isSignedIn, isAdmin, accountHref }: StoreHea
           </button>
         </div>
       </div>
-      <nav className="market-nav" aria-label="Store navigation">
-        <a href="/shop">
+      <nav className="navlinks" aria-label="Store navigation">
+        <Link href="/shop">
           <Grid3X3 size={16} />
           Shop
-        </a>
+        </Link>
         {navLinks.slice(1).map((link) => (
-          <a href={link.href} key={link.href}>{link.label}</a>
+          <Link href={link.href} key={link.href}>
+            {link.label}
+          </Link>
         ))}
       </nav>
-      <div className={`mobile-menu-panel ${isMenuOpen ? "open" : ""}`}>
-        <div className="mobile-menu-grid">
+      <div className={`mobile-panel ${isMenuOpen ? "open" : ""}`}>
+        <div className="mobile-grid">
           {navLinks.map((link) => (
-            <a href={link.href} key={link.href} onClick={() => setIsMenuOpen(false)}>
+            <Link href={link.href} key={link.href} onClick={() => setIsMenuOpen(false)}>
               {link.label}
-            </a>
+            </Link>
           ))}
         </div>
-        <div className="mobile-menu-actions">
-          <a href={accountHref} onClick={() => setIsMenuOpen(false)}>
+        <div className="nav-actions">
+          <Link href={accountHref} onClick={() => setIsMenuOpen(false)}>
             <UserRound size={17} />
             {isSignedIn ? (isAdmin ? "Admin dashboard" : "Dashboard") : "Login"}
-          </a>
-          <a href="/customers/wishlist" onClick={() => setIsMenuOpen(false)}>
+          </Link>
+          <Link href="/customers/wishlist" onClick={() => setIsMenuOpen(false)}>
             <Heart size={17} />
             Wishlist
-          </a>
-          <a href="/cart" onClick={() => setIsMenuOpen(false)}>
+          </Link>
+          <Link href="/cart" onClick={() => setIsMenuOpen(false)}>
             <ShoppingBag size={17} />
             Cart ({cartCount})
-          </a>
+          </Link>
           {isSignedIn ? (
             <form action="/api/auth/logout" method="post">
-              <button type="submit" className="logout-link">
+              <button type="submit" className="text-link">
                 Log out
               </button>
             </form>

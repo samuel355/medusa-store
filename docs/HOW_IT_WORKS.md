@@ -90,7 +90,8 @@ subtotal — every change is a real Medusa Store API call, not local-only state.
   - `checkout.initiate()` opens a Medusa payment session against the **Paystack** provider.
   - **Card**: Paystack's Inline popup opens in an overlay on the same page (no redirect) —
     the storefront never sees the card number.
-  - **Mobile Money**: network + phone number, then an on-page OTP/approval prompt.
+  - **Mobile Money**: network + phone number, then Paystack's own Inline popup collects any
+    OTP/approval step — same popup mechanism as card, no custom OTP UI on our side.
 - After Paystack reports success, the client polls the payment session, then calls
   `cart.complete()` — **only then** does Medusa create the order. A cart is never marked
   paid or converted based on the popup's client-side callback alone; the payment session's

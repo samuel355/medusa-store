@@ -67,24 +67,31 @@ export function createCheckoutService(sdk: CheckoutSdkBoundary) {
       return session.status;
     }),
 
+    // Medusa's complete-cart workflow authorizes the payment session itself — it calls the
+    // Paystack provider, which live-verifies the transaction directly with Paystack's API
+    // (GET /transaction/verify). It does not depend on Paystack's webhook having already
+    // updated the cart's local session status, so this retries `sdk.cart.complete` itself
+    // rather than polling `cart.retrieve` for a status a webhook might never deliver locally.
+    // completeCartWorkflow is documented as idempotent, so retrying (and the follow-up
+    // `complete` call below) is safe and returns the same order.
     waitUntilPaid: (cartId: string, options: { attempts?: number; intervalMs?: number; sleep?: (ms: number) => Promise<void> } = {}) => run("verify payment", async () => {
-      const attempts = options.attempts ?? 20;
+      const attempts = options.attempts ?? 5;
       const sleep = options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+      let lastError: unknown;
       for (let attempt = 0; attempt < attempts; attempt += 1) {
-        const { cart } = await sdk.cart.retrieve(cartId, CART_FIELDS);
-        const session = cart.payment_collection?.payment_sessions?.find((candidate) => candidate.provider_id === PAYSTACK_PROVIDER_ID);
-        if (!session) throw new MedusaCheckoutError("verify payment", "The Paystack payment session was not found.");
-        if (session.status === "authorized" || session.status === "captured") return session;
-        if (session.status === "error" || session.status === "canceled") throw new MedusaCheckoutError("verify payment", `Payment is ${session.status}.`);
+        try {
+          const result = await sdk.cart.complete(cartId);
+          if (result.type === "order") return result;
+          lastError = new Error(result.error.message);
+        } catch (cause) {
+          lastError = cause;
+        }
         if (attempt + 1 < attempts) await sleep(options.intervalMs ?? 1500);
       }
-      throw new MedusaCheckoutError("verify payment", "Payment confirmation is still pending. You can safely resume checkout.");
+      throw lastError instanceof Error ? lastError : new Error("Payment confirmation is still pending. You can safely resume checkout.");
     }),
 
     complete: (cartId: string) => run("complete cart", async () => {
-      const { cart } = await sdk.cart.retrieve(cartId, CART_FIELDS);
-      const session = cart.payment_collection?.payment_sessions?.find((candidate) => candidate.provider_id === PAYSTACK_PROVIDER_ID);
-      if (!session || (session.status !== "authorized" && session.status !== "captured")) throw new MedusaCheckoutError("complete cart", "Payment must be authorized before completing the cart.");
       const result = await sdk.cart.complete(cartId);
       if (result.type !== "order") throw new MedusaCheckoutError("complete cart", result.error.message);
       return result.order;

@@ -5,7 +5,7 @@ export async function StoreHeader() {
   let isSignedIn = false;
   let isAdmin = false;
 
-  if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
     const user = await getAuthUser();
 
     isSignedIn = Boolean(user);

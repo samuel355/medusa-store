@@ -290,68 +290,68 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false }: Che
   }
 
   return (
-    <section className="cart-layout checkout-flow">
-      <div className="checkout-flow-main">
+    <section className="ed-checkout">
+      <div className="ed-checkout-main">
         {!showForm ? (
-          <div className="checkout-panel checkout-gate">
-            <p className="kicker">Step 1</p>
+          <div className="ed-checkout-panel">
+            <p className="ed-eyebrow">Step 1</p>
             <h2>Sign in or continue as guest.</h2>
-            <p>Signing in saves this order to your account and pre-fills your details next time.</p>
-            <div className="checkout-gate-actions">
-              <a className="primary-action" href={`/login?redirectTo=${encodeURIComponent("/checkout")}`}>
-                <LogIn size={18} />
+            <p className="ed-checkout-sub">Signing in saves this order to your account and pre-fills your details next time.</p>
+            <div className="ed-checkout-gate-actions">
+              <a className="ed-btn-solid" href={`/login?redirectTo=${encodeURIComponent("/checkout")}`}>
+                <LogIn size={16} />
                 Sign in
               </a>
-              <button className="secondary-action" onClick={() => setGuestChosen(true)}>
-                <UserRound size={18} />
+              <button className="ed-btn-outline" onClick={() => setGuestChosen(true)}>
+                <UserRound size={16} />
                 Continue as guest
               </button>
             </div>
           </div>
         ) : (
           <>
-            <div className="checkout-panel">
-              <p className="kicker">Step 1</p>
+            <div className="ed-checkout-panel">
+              <p className="ed-eyebrow">Step 1</p>
               <h2>{isSignedIn ? `Signed in as ${customer?.displayName || email}` : "Checking out as guest"}</h2>
               {!isSignedIn ? (
-                <p>
+                <p className="ed-checkout-sub">
                   Have an account? <a href={`/login?redirectTo=${encodeURIComponent("/checkout")}`}>Sign in instead</a>.
                 </p>
               ) : null}
-              <div className="checkout-form">
-                <label>
-                  Email
+              <div className="ed-checkout-form">
+                <label className="ed-buybox-field">
+                  <span>Email</span>
                   <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" placeholder="you@example.com" />
                 </label>
-                <label>
-                  Phone
+                <label className="ed-buybox-field">
+                  <span>Phone</span>
                   <input value={phone} onChange={(event) => setPhone(event.target.value)} />
                 </label>
-                <label>
-                  Delivery address
+                <label className="ed-buybox-field">
+                  <span>Delivery address</span>
                   <textarea value={address} onChange={(event) => setAddress(event.target.value)} placeholder="Street, area, city" />
                 </label>
               </div>
             </div>
 
-            <div className="checkout-panel">
-              <p className="kicker">Step 2</p>
+            <div className="ed-checkout-panel">
+              <p className="ed-eyebrow">Step 2</p>
               <h2>Choose how to pay.</h2>
-              <div className="login-tabs payment-method-tabs" role="tablist" aria-label="Payment method">
-                <button className={paymentMethod === "mobile_money" ? "active" : ""} onClick={() => setPaymentMethod("mobile_money")}>
-                  <Smartphone size={16} />
+              <div className="ed-checkout-tabs" role="tablist" aria-label="Payment method">
+                <button className={paymentMethod === "mobile_money" ? "is-active" : ""} onClick={() => setPaymentMethod("mobile_money")}>
+                  <Smartphone size={15} />
                   Mobile Money
                 </button>
-                <button className={paymentMethod === "card" ? "active" : ""} onClick={() => setPaymentMethod("card")}>
-                  <CreditCard size={16} />
+                <button className={paymentMethod === "card" ? "is-active" : ""} onClick={() => setPaymentMethod("card")}>
+                  <CreditCard size={15} />
                   Card
                 </button>
               </div>
 
               {paymentMethod === "mobile_money" ? (
-                <div className="checkout-form">
-                  <label>
-                    Network
+                <div className="ed-checkout-form">
+                  <label className="ed-buybox-field">
+                    <span>Network</span>
                     <select value={momoProvider} onChange={(event) => setMomoProvider(event.target.value as GhanaMobileMoneyProvider)}>
                       {NETWORKS.map((network) => (
                         <option key={network.value} value={network.value}>
@@ -360,90 +360,83 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false }: Che
                       ))}
                     </select>
                   </label>
-                  <label>
-                    Mobile Money number
+                  <label className="ed-buybox-field">
+                    <span>Mobile Money number</span>
                     <input value={momoPhone} onChange={(event) => setMomoPhone(event.target.value)} placeholder="024 000 0000" />
                   </label>
 
                   {charge.status === "awaiting_otp" ? (
                     <>
-                      <p className="inline-notice">{charge.message}</p>
-                      <label>
-                        OTP
+                      <p className="ed-buybox-notice">{charge.message}</p>
+                      <label className="ed-buybox-field">
+                        <span>OTP</span>
                         <input value={otp} onChange={(event) => setOtp(event.target.value)} inputMode="numeric" placeholder="6-digit code" />
                       </label>
-                      <button className="pay-button" onClick={submitOtp} disabled={!otp.trim()}>
-                        <CheckCircle2 size={18} />
+                      <button className="ed-btn-solid" onClick={submitOtp} disabled={!otp.trim()}>
+                        <CheckCircle2 size={16} />
                         Confirm code
                       </button>
                     </>
                   ) : charge.status === "awaiting_approval" ? (
-                    <p className="inline-notice">
-                      <Loader2 size={16} className="spin" /> {charge.message}
+                    <p className="ed-buybox-notice">
+                      <Loader2 size={15} className="spin" /> {charge.message}
                     </p>
                   ) : (
                     <button
-                      className="pay-button"
+                      className="ed-btn-solid"
                       disabled={charge.status === "submitting" || !canSubmit || !momoPhone.trim()}
                       onClick={payWithMobileMoney}
                     >
-                      <Smartphone size={18} />
+                      <Smartphone size={16} />
                       {charge.status === "submitting" ? "Starting..." : `Pay ${formatMoney(cart.totals.total)}`}
                     </button>
                   )}
                 </div>
               ) : (
-                <div className="checkout-form">
-                  <p className="muted-copy">Card details are entered securely in Paystack&apos;s payment window — we never see or store your card number.</p>
-                  <button className="pay-button" disabled={charge.status === "submitting" || !canSubmit} onClick={payWithCard}>
-                    <CreditCard size={18} />
+                <div className="ed-checkout-form">
+                  <p className="ed-checkout-sub">Card details are entered securely in Paystack&apos;s payment window — we never see or store your card number.</p>
+                  <button className="ed-btn-solid" disabled={charge.status === "submitting" || !canSubmit} onClick={payWithCard}>
+                    <CreditCard size={16} />
                     {charge.status === "submitting" ? "Starting..." : `Pay ${formatMoney(cart.totals.total)}`}
                   </button>
                 </div>
               )}
 
-              {charge.status === "error" ? <p className="inline-notice checkout-error">{charge.message}</p> : null}
+              {charge.status === "error" ? <p className="ed-buybox-notice" role="alert">{charge.message}</p> : null}
 
-              <div className="checkout-trust cart-checkout-trust">
-                <span>
-                  <ShieldCheck size={16} />
-                  Secure payment
-                </span>
-              </div>
+              <p className="ed-checkout-secure">
+                <ShieldCheck size={15} />
+                Secure payment
+              </p>
             </div>
           </>
         )}
       </div>
 
-      <aside className="checkout-panel cart-summary checkout-flow-summary">
-        <div className="checkout-head">
-          <div>
-            <p className="kicker">Order summary</p>
-            <h2>{cart.totals.quantity} item{cart.totals.quantity === 1 ? "" : "s"}</h2>
-          </div>
-        </div>
-        <div className="checkout-lines">
+      <aside className="ed-bag-summary ed-checkout-summary">
+        <h2>{cart.totals.quantity} item{cart.totals.quantity === 1 ? "" : "s"}</h2>
+        <div className="ed-bag-summary-lines">
           {cart.items.map((item) => (
             <div key={item.id}>
               <span>
                 {item.quantity}x {item.name}
               </span>
-              <strong>{formatMoney(item.lineTotal)}</strong>
+              <span>{formatMoney(item.lineTotal)}</span>
             </div>
           ))}
         </div>
-        <div className="checkout-lines">
+        <div className="ed-bag-summary-lines">
           <div>
             <span>Subtotal</span>
-            <strong>{formatMoney(cart.totals.subtotal)}</strong>
+            <span>{formatMoney(cart.totals.subtotal)}</span>
           </div>
           <div>
             <span>Delivery</span>
-            <strong>{formatMoney(cart.totals.shipping)}</strong>
+            <span>{formatMoney(cart.totals.shipping)}</span>
           </div>
-          <div>
+          <div className="ed-bag-summary-total">
             <span>Total</span>
-            <strong>{formatMoney(cart.totals.total)}</strong>
+            <span>{formatMoney(cart.totals.total)}</span>
           </div>
         </div>
       </aside>

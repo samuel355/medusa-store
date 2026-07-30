@@ -78,7 +78,7 @@ export function ConfirmationCards() {
           ))}
         </div>
         <div className="confirmation-actions">
-          <a href={`/tracking?order=${order.orderNumber}`}>Track order</a>
+          <a href={`/tracking?order=${order.id}`}>Track order</a>
           <a href="/shop">Continue shopping</a>
         </div>
       </section>

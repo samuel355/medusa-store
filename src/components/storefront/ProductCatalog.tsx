@@ -1,11 +1,10 @@
 "use client";
 
-import { BadgeCheck, Bell, Heart, PackageCheck, Search, ShoppingBag, SlidersHorizontal, Star, X } from "lucide-react";
-import Image from "next/image";
+import { Search, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { ProductCard } from "@/components/storefront/ProductCard";
 import { type StoreProduct } from "@/lib/db/products";
 import { useCart } from "@/lib/medusa/cart";
-import { formatMoney } from "@/lib/utils/money";
 import { fetchWishlist, toggleWishlistItem } from "@/lib/utils/wishlist";
 
 type ProductCatalogProps = {
@@ -13,27 +12,8 @@ type ProductCatalogProps = {
   products: StoreProduct[];
 };
 
-const colorSwatches: Record<string, string> = {
-  Black: "#111827",
-  Blue: "#2563eb",
-  Brown: "#92400e",
-  Cream: "#f5f0e8",
-  Gold: "#d97706",
-  Green: "#15803d",
-  Grey: "#6b7280",
-  Navy: "#1e3a8a",
-  Orange: "#ea580c",
-  Pink: "#ec4899",
-  Purple: "#7c3aed",
-  Red: "#dc2626",
-  Tan: "#c19a6b",
-  White: "#ffffff",
-  Yellow: "#facc15",
-};
-
-function getSwatchColor(colorName: string) {
-  return colorSwatches[colorName] ?? "#f97316";
-}
+const PILLS = ["New arrivals", "Best sellers", "Sale", "In stock", "Top rated", "Same-day Accra"];
+const PRICE_BANDS = ["Any price", "Under GH₵200", "Under GH₵300", "GH₵300 - GH₵500", "Over GH₵500"];
 
 export function ProductCatalog({ departments, products: catalogProducts }: ProductCatalogProps) {
   const { addToCart: addVariantToCart, error: cartError } = useCart();
@@ -61,14 +41,22 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const categoryParam = params.get("category");
+    const pillParam = params.get("pill");
+    const priceParam = params.get("price");
     const queryParam = params.get("q");
     const storedQuery = window.localStorage.getItem("begnon_search");
+    // window.location/localStorage don't exist during SSR, so the first client
+    // render must match the server's default-filter render before applying these
+    // browser-only values — this has to happen in an effect, not during render.
     if (categoryParam && departments.includes(categoryParam)) {
-      // window.location/localStorage don't exist during SSR, so the first client
-      // render must match the server's default-filter render before applying these
-      // browser-only values — this has to happen in an effect, not during render.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setCategory(categoryParam);
+    }
+    if (pillParam && PILLS.includes(pillParam)) {
+      setActivePill(pillParam);
+    }
+    if (priceParam && PRICE_BANDS.includes(priceParam)) {
+      setPriceBand(priceParam);
     }
     if (queryParam) {
       setQuery(queryParam);
@@ -259,23 +247,20 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
   ].filter(Boolean).length;
 
   return (
-    <section id="products" className="market-section shop-catalog-section">
-      <div className="shop-catalog-head">
-        <div className="shop-title-block">
-          <p className="kicker">Shop the store</p>
-          <h2>All products</h2>
-        </div>
-        <div className="shop-toolbar">
-          <label className="shop-search-row">
-            <Search size={18} />
+    <section id="products" className="ed-shop">
+      <div className="ed-shop-head">
+        <h1>All products</h1>
+        <div className="ed-shop-toolbar">
+          <label className="ed-search">
+            <Search size={15} />
             <input
               aria-label="Search shop products"
-              placeholder="Search shirts, dresses, kaftans..."
+              placeholder="Search products..."
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
           </label>
-          <label className="shop-sort-control">
+          <label className="ed-sort">
             <span>Sort</span>
             <select value={sort} onChange={(event) => setSort(event.target.value)}>
               <option>Featured</option>
@@ -288,54 +273,48 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
             </select>
           </label>
         </div>
-        {notice ? <p className="inline-notice shop-notice">{notice}</p> : null}
       </div>
-      <div className="shop-shelf-bar">
-        <div className="filter-pills">
-          {["New arrivals", "Best sellers", "Sale", "In stock", "Top rated", "Same-day Accra"].map((pill) => (
-            <button className={activePill === pill ? "active" : ""} key={pill} onClick={() => setActivePill(pill)}>
+      {notice ? <p className="ed-notice">{notice}</p> : null}
+
+      <div className="ed-shop-bar">
+        <div className="ed-shop-pills">
+          {PILLS.map((pill) => (
+            <button className={activePill === pill ? "is-active" : ""} key={pill} onClick={() => setActivePill(pill)}>
               {pill}
             </button>
           ))}
         </div>
-        <button type="button" className="mobile-filter-trigger" onClick={() => setIsFilterOpen(true)}>
-          <SlidersHorizontal size={16} />
+        <button type="button" className="ed-filter-trigger" onClick={() => setIsFilterOpen(true)}>
+          <SlidersHorizontal size={15} />
           Filters
-          {activeFilterCount > 0 ? <span className="filter-count-badge">{activeFilterCount}</span> : null}
+          {activeFilterCount > 0 ? <span>{activeFilterCount}</span> : null}
         </button>
-        <div className="shop-result-count">
-          <strong>{products.length}</strong>
-          <span>{products.length === 1 ? "item" : "items"}</span>
-        </div>
+        <p className="ed-shop-count">
+          <strong>{products.length}</strong> {products.length === 1 ? "item" : "items"}
+        </p>
       </div>
-      <div className="market-layout shop-catalog-layout">
+
+      <div className="ed-shop-layout">
         <button
           type="button"
-          className={`filter-backdrop ${isFilterOpen ? "open" : ""}`}
+          className={`ed-filter-backdrop ${isFilterOpen ? "is-open" : ""}`}
           aria-label="Close filters"
           onClick={() => setIsFilterOpen(false)}
         />
-        <aside className={`filter-panel ${isFilterOpen ? "open" : ""}`}>
-          <div className="filter-panel-head">
-            <h3>
-              <SlidersHorizontal size={18} />
-              Refine
-            </h3>
+        <aside className={`ed-filter-panel ${isFilterOpen ? "is-open" : ""}`}>
+          <div className="ed-filter-head">
+            <h3>Refine</h3>
             <button type="button" onClick={resetFilters}>
               Reset
             </button>
-            <button type="button" className="mobile-filter-close" aria-label="Close filters" onClick={() => setIsFilterOpen(false)}>
-              <X size={18} />
+            <button type="button" className="ed-filter-close" aria-label="Close filters" onClick={() => setIsFilterOpen(false)}>
+              <X size={16} />
             </button>
           </div>
-          <div className="active-filter-count">
-            <strong>{activeFilterCount}</strong>
-            <span>active {activeFilterCount === 1 ? "filter" : "filters"}</span>
-          </div>
-          <div className="filter-group">
-            <p>Category</p>
+
+          <div className="ed-filter-section">
             <label>
-              Department
+              <span>Category</span>
               <select value={category} onChange={(event) => setCategory(event.target.value)}>
                 <option>All categories</option>
                 {departments.slice(0, 10).map((department) => (
@@ -344,10 +323,9 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
               </select>
             </label>
           </div>
-          <div className="filter-group filter-grid-2">
-            <p>Style</p>
+          <div className="ed-filter-section">
             <label>
-              Size
+              <span>Size</span>
               <select value={size} onChange={(event) => setSize(event.target.value)}>
                 <option>Any size</option>
                 {facets.sizes.map((item) => (
@@ -356,7 +334,7 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
               </select>
             </label>
             <label>
-              Color
+              <span>Color</span>
               <select value={color} onChange={(event) => setColor(event.target.value)}>
                 <option>Any color</option>
                 {facets.colors.map((item) => (
@@ -365,7 +343,7 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
               </select>
             </label>
             <label>
-              Fit
+              <span>Fit</span>
               <select value={fit} onChange={(event) => setFit(event.target.value)}>
                 <option>Any fit</option>
                 {facets.fits.map((item) => (
@@ -374,7 +352,7 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
               </select>
             </label>
             <label>
-              Occasion
+              <span>Occasion</span>
               <select value={occasion} onChange={(event) => setOccasion(event.target.value)}>
                 <option>Any occasion</option>
                 {facets.occasions.map((item) => (
@@ -383,10 +361,9 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
               </select>
             </label>
           </div>
-          <div className="filter-group">
-            <p>Price & stock</p>
+          <div className="ed-filter-section">
             <label>
-              Price
+              <span>Price</span>
               <select value={priceBand} onChange={(event) => setPriceBand(event.target.value)}>
                 <option>Any price</option>
                 <option>Under GH₵200</option>
@@ -396,7 +373,7 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
               </select>
             </label>
             <label>
-              Availability
+              <span>Availability</span>
               <select value={availability} onChange={(event) => setAvailability(event.target.value)}>
                 <option>Any availability</option>
                 <option>In stock</option>
@@ -407,7 +384,7 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
               </select>
             </label>
             <label>
-              Discount
+              <span>Discount</span>
               <select value={discount} onChange={(event) => setDiscount(event.target.value)}>
                 <option>Any discount</option>
                 <option>Discount eligible</option>
@@ -415,10 +392,9 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
               </select>
             </label>
           </div>
-          <div className="filter-group">
-            <p>Details</p>
+          <div className="ed-filter-section">
             <label>
-              Fabric
+              <span>Fabric</span>
               <select value={fabric} onChange={(event) => setFabric(event.target.value)}>
                 <option>Any fabric</option>
                 {facets.fabrics.map((item) => (
@@ -427,7 +403,7 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
               </select>
             </label>
             <label>
-              Brand
+              <span>Brand</span>
               <select value={brand} onChange={(event) => setBrand(event.target.value)}>
                 <option>Any brand</option>
                 {facets.brands.map((item) => (
@@ -436,7 +412,7 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
               </select>
             </label>
             <label>
-              Delivery
+              <span>Delivery</span>
               <select value={delivery} onChange={(event) => setDelivery(event.target.value)}>
                 <option>Any delivery speed</option>
                 <option>Same-day Accra</option>
@@ -444,7 +420,7 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
               </select>
             </label>
             <label>
-              Payment
+              <span>Payment</span>
               <select value={payment} onChange={(event) => setPayment(event.target.value)}>
                 <option>Paystack enabled</option>
                 <option>Mobile money</option>
@@ -452,128 +428,64 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
               </select>
             </label>
           </div>
-          <div className="filter-checks">
-            <span>
-              <BadgeCheck size={16} /> Begnon verified
-            </span>
-            <span>
-              <PackageCheck size={16} /> {delivery}
-            </span>
-            <span>
-              <Bell size={16} /> {payment}
-            </span>
-          </div>
-          <button type="button" className="filter-panel-apply" onClick={() => setIsFilterOpen(false)}>
+
+          <button type="button" className="ed-filter-apply" onClick={() => setIsFilterOpen(false)}>
             Show {products.length} {products.length === 1 ? "result" : "results"}
           </button>
         </aside>
 
-        <div className="wholesale-grid">
-          {paginatedProducts.map((product, index) => {
-            const discountPercent =
-              product.oldPrice > product.price
-                ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)
-                : 0;
-
-            return (
-              <article className="wholesale-card shop-product-card" key={product.slug}>
-                <button
-                  className={`wish-button ${saved.includes(product.id) ? "active" : ""}`}
-                  aria-label={`Save ${product.name}`}
-                  onClick={async () => {
-                    const result = await toggleWishlistItem(product.id);
-                    if (result.requiresAuth) {
-                      setNotice("Sign in to save products to your wishlist.");
-                      return;
-                    }
-                    setSaved((current) =>
-                      result.inWishlist ? [...current, product.id] : current.filter((id) => id !== product.id)
-                    );
-                  }}
-                >
-                  <Heart size={17} />
-                </button>
-                <a className={`wholesale-art shop-product-art product-${index + 1}`} href={`/products/${product.slug}`}>
-                  <Image src={product.image} alt={product.name} fill sizes="(max-width: 768px) 45vw, 22vw" />
-                  <div className="shop-product-badges">
-                    <span>{product.badge}</span>
-                    {discountPercent > 0 ? <span>-{discountPercent}%</span> : null}
-                  </div>
-                </a>
-                <div className="wholesale-copy shop-product-copy">
-                  <div className="shop-product-topline shop-card-rating-row">
-                    <p>{product.brand}</p>
-                    <span>
-                      <Star size={13} fill="currentColor" />
-                      {product.rating}
-                    </span>
-                  </div>
-                  <a className="shop-product-name" href={`/products/${product.slug}`}>
-                    {product.name}
-                  </a>
-                  <div className="shop-price-row">
-                    <strong>{formatMoney(product.price)}</strong>
-                    {product.oldPrice ? <s>{formatMoney(product.oldPrice)}</s> : null}
-                  </div>
-                  <div className="shop-card-bottom-row">
-                    <div className="shop-color-row" aria-label={`Available colors: ${product.colors.join(", ")}`}>
-                    {product.colors.slice(0, 4).map((item) => (
-                      <span
-                        aria-label={item}
-                        key={item}
-                        style={{ background: getSwatchColor(item) }}
-                        title={item}
-                      />
-                    ))}
-                    </div>
-                    <span className="shop-size-summary">{product.sizes.slice(0, 3).join(" ")}</span>
-                  </div>
-                  <div className="shop-stock-line">
-                    <span>{product.subcategory}</span>
-                    <span>{product.stock}</span>
-                  </div>
-                  <div className="shop-card-actions">
-                    <button aria-label={`Add ${product.name} to cart`} onClick={() => addToCart(product)}>
-                      <ShoppingBag size={17} />
-                      Quick add
-                    </button>
-                  </div>
-                </div>
-              </article>
-            );
-          })}
+        <div className="ed-product-grid ed-shop-grid">
+          {paginatedProducts.map((product) => (
+            <ProductCard
+              key={product.slug}
+              product={product}
+              saved={saved.includes(product.id)}
+              onWishlistToggle={async () => {
+                const result = await toggleWishlistItem(product.id);
+                if (result.requiresAuth) {
+                  setNotice("Sign in to save products to your wishlist.");
+                  return;
+                }
+                setSaved((current) =>
+                  result.inWishlist ? [...current, product.id] : current.filter((id) => id !== product.id)
+                );
+              }}
+              onQuickAdd={() => addToCart(product)}
+            />
+          ))}
         </div>
       </div>
-      {cartError ? <p className="inline-notice" role="alert">{cartError.message}</p> : null}
+
+      {cartError ? (
+        <p className="ed-notice" role="alert">
+          {cartError.message}
+        </p>
+      ) : null}
       {!paginatedProducts.length ? (
-        <div className="dashboard-panel empty-results">
+        <div className="ed-empty">
           <h2>No products match those filters.</h2>
           <p>Clear the search or choose another category, delivery speed, or price range.</p>
-          <button
-            className="primary-action"
-            onClick={resetFilters}
-          >
+          <button className="ed-text-link" type="button" onClick={resetFilters}>
             Reset filters
           </button>
         </div>
       ) : null}
-      <div className="pagination-row shop-pagination" aria-label="Product pages">
-        <button className="pager-edge" disabled={page === 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>
-          <span aria-hidden="true">‹</span>
+
+      <div className="ed-pagination" aria-label="Product pages">
+        <button disabled={page === 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>
           Previous
         </button>
         {Array.from({ length: pageCount }, (_, index) => index + 1).map((pageNumber) => (
           <button
-            className={page === pageNumber ? "active" : ""}
+            className={page === pageNumber ? "is-active" : ""}
             key={pageNumber}
             onClick={() => setPage(pageNumber)}
           >
             {pageNumber}
           </button>
         ))}
-        <button className="pager-edge" disabled={page === pageCount} onClick={() => setPage((current) => Math.min(pageCount, current + 1))}>
+        <button disabled={page === pageCount} onClick={() => setPage((current) => Math.min(pageCount, current + 1))}>
           Next
-          <span aria-hidden="true">›</span>
         </button>
       </div>
     </section>
