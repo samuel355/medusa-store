@@ -12,13 +12,8 @@ export type MedusaCartService = {
   remove(id: string, itemId: string): Promise<CartResponse>;
 };
 
-// If checkout fails after Paystack has already captured payment but before the
-// order finishes creating (a real risk when the backend is slow — see
-// finalizeVerifiedCheckout's retry loop), the cart is left with a captured
-// payment session Medusa can never delete. Every subsequent edit to that cart
-// then 500s ("Could not delete all payment sessions") — the shopper is
-// permanently stuck until they clear storage by hand. This is Medusa's own
-// FetchError message text, not ours, so detection has to be a message check.
+// A cart left with a captured-but-uncancellable payment session 500s on every
+// edit; Medusa's error has no code for this, so detection is message-based.
 function isStalePaymentSessionError(error: unknown): boolean {
   if (!(error instanceof MedusaCartOperationError)) return false;
   const cause = error.cause;
@@ -26,10 +21,8 @@ function isStalePaymentSessionError(error: unknown): boolean {
   return /payment session/i.test(message);
 }
 
-// The cart ID persisted in storage can outlive the cart itself (deleted,
-// expired, or from a reset dev database), in which case Medusa 404s on
-// retrieve. Treat that the same as a fresh visitor rather than surfacing a
-// permanent "cart operation failed" error.
+// A stored cart ID can outlive the cart itself; treat a 404 on retrieve like
+// a fresh visitor instead of a hard error.
 function isCartNotFoundError(error: unknown): boolean {
   if (!(error instanceof MedusaCartOperationError) || error.operation !== "retrieve") return false;
   const cause = error.cause as { status?: number } | undefined;
@@ -72,8 +65,6 @@ export function createMedusaCartDataSource(
         return accept(await service.add(requireId(), variantId, quantity));
       } catch (error) {
         if (!isStalePaymentSessionError(error)) throw error;
-        // A fresh cart has no prior items to conflict with, so re-adding the
-        // same variant against it recovers transparently.
         await abandonForFreshCart();
         return accept(await service.add(requireId(), variantId, quantity));
       }
@@ -83,9 +74,6 @@ export function createMedusaCartDataSource(
         return accept(await service.update(requireId(), itemId, quantity));
       } catch (error) {
         if (!isStalePaymentSessionError(error)) throw error;
-        // The line item being updated belonged to the poisoned cart, so it
-        // has no equivalent in a fresh one — there's nothing sensible to
-        // retry, just stop pointing at the cart that can never be edited.
         return abandonForFreshCart();
       }
     },

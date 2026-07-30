@@ -89,10 +89,6 @@ test("retains typed loading and mutation failures without replacing cart state",
 });
 
 test("add recovers from a cart poisoned by an uncancellable captured payment session", async () => {
-  // Simulates a cart left over from a checkout that captured payment via
-  // Paystack but failed to finish creating the order — Medusa can never
-  // delete that payment session, so every edit 500s with this exact message
-  // until the shopper is moved onto a fresh cart.
   const removed: string[] = [];
   const storage = { getItem: () => "cart_poisoned", setItem: () => {}, removeItem: (key: string) => removed.push(key) };
   let addCalls = 0;

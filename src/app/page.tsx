@@ -32,15 +32,12 @@ function buildShopByTiles(products: StoreProduct[], categories: { id: string; na
     },
   ];
 
-  // Only tiles backed by real, currently-in-stock matches are shown — an empty
-  // tile (e.g. a merchandising segment with no live products yet) is worse than
-  // no tile at all.
+  // Skip tiles with no live matches instead of showing an empty segment.
   const usedImages = new Set<string>();
   return candidates
     .filter((tile) => tile.matches.length > 0)
     .map((tile) => {
-      // Prefer a product image not already used by an earlier tile, so a small
-      // catalogue doesn't render the same photo across every "Shop by" card.
+      // Avoid repeating the same photo across tiles when the catalogue is small.
       const product = tile.matches.find((candidate) => !usedImages.has(candidate.image)) ?? tile.matches[0];
       usedImages.add(product.image);
       return { label: tile.label, href: tile.href, count: tile.matches.length, image: product.image };

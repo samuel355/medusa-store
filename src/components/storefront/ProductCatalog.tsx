@@ -19,11 +19,8 @@ const SHOP_NAV_GENDERS = ["Men", "Women"] as const;
 export function ProductCatalog({ departments, products: catalogProducts }: ProductCatalogProps) {
   const { addToCart: addVariantToCart, error: cartError } = useCart();
   const [category, setCategory] = useState("All categories");
-  // Subcategory names (e.g. "Footwear") aren't unique to a gender — Men and
-  // Women both have their own "Footwear" products. Selecting a subcategory
-  // from the Men/Women nav dropdown sets this alongside `category` so the
-  // filter can scope to that gender's subcategory only, instead of matching
-  // every product with a same-named subcategory regardless of gender.
+  // Subcategory names like "Footwear" aren't unique to a gender, so this
+  // scopes the filter to the selected gender's subcategory only.
   const [genderScope, setGenderScope] = useState<string | null>(null);
   const [delivery, setDelivery] = useState("Any delivery speed");
   const [payment, setPayment] = useState("Paystack enabled");
@@ -64,9 +61,7 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
     const priceParam = params.get("price");
     const queryParam = params.get("q");
     const storedQuery = window.localStorage.getItem("begnon_search");
-    // window.location/localStorage don't exist during SSR, so the first client
-    // render must match the server's default-filter render before applying these
-    // browser-only values — this has to happen in an effect, not during render.
+    // Deferred to an effect since these read browser-only APIs unavailable during SSR.
     if (categoryParam && departments.includes(categoryParam)) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setCategory(categoryParam);
@@ -230,9 +225,8 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
   const pageCount = Math.max(1, Math.ceil(products.length / pageSize));
   const paginatedProducts = products.slice((page - 1) * pageSize, page * pageSize);
 
-  // Reset to page 1 whenever the filters change, adjusted directly during render
-  // (React's documented alternative to an effect for this) instead of an effect,
-  // so the reset applies before this render commits rather than one tick later.
+  // Reset to page 1 when filters change; adjusted during render (not an
+  // effect) so it applies before this render commits.
   const filterKey = JSON.stringify([activePill, availability, brand, category, color, delivery, discount, fabric, fit, genderScope, occasion, priceBand, query, size, sort]);
   const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
   if (filterKey !== prevFilterKey) {

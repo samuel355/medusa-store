@@ -13,45 +13,44 @@ services:
         value: 20.19.0
       - key: NODE_ENV
         value: production
-      # --- Database (Supabase Postgres) ---
+
       - key: DATABASE_URL
         sync: false
       - key: DATABASE_SCHEMA
         value: medusastore
-      # --- Redis (event bus / cache / locking) ---
+
       - key: MEDUSA_REDIS_ENABLED
         value: "true"
       - key: REDIS_URL
         sync: false
-      # --- Auth secrets: generate strong random values, don't reuse dev secrets ---
+
+      # Generate real random values, don't reuse dev secrets.
       - key: JWT_SECRET
         generateValue: true
       - key: COOKIE_SECRET
         generateValue: true
-      # --- CORS: comma-separated origins allowed to call this API ---
-      # STORE_CORS must include the deployed Vercel storefront URL(s).
-      # ADMIN_CORS/AUTH_CORS must include this backend's own Render URL
-      # (the admin dashboard is served from this same service).
+
+      # STORE_CORS needs the Vercel storefront URL; ADMIN_CORS/AUTH_CORS need
+      # this service's own Render URL.
       - key: STORE_CORS
         sync: false
       - key: ADMIN_CORS
         sync: false
       - key: AUTH_CORS
         sync: false
-      # Used by the admin's "Open shop" links to point at the real storefront
-      # instead of guessing it lives on this same host. See
-      # apps/backend/src/admin/lib/storefront-url.ts.
+
+      # Storefront URL for the admin's "Open shop" links (storefront-url.ts).
       - key: PLUGIN_STOREFRONT_URL
         sync: false
-      # --- Payments ---
+
       - key: PAYSTACK_SECRET_KEY
         sync: false
       - key: PAYSTACK_WEBHOOK_SECRET
         sync: false
-      # --- SMS (Arkesel) ---
+
       - key: ARKESEL_API_KEY
         sync: false
-      # --- File storage (Cloudflare R2) ---
+
       - key: R2_ACCOUNT_ID
         sync: false
       - key: R2_ACCESS_KEY_ID
