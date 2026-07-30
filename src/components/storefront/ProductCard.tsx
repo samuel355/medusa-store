@@ -29,7 +29,7 @@ export function ProductCard({
   return (
     <article className="ed-product-card">
       <div className="ed-product-image">
-        <Link href={`/products/${product.slug}`} tabIndex={-1} aria-hidden="true">
+        <Link href={`/products/${product.slug}`} tabIndex={-1} aria-hidden="true" className="ed-product-image-link">
           <Image
             src={product.image}
             alt={product.name}
@@ -42,7 +42,7 @@ export function ProductCard({
         {(product.badge || discount > 0) && (
           <div className="ed-product-tags">
             {product.badge ? <span>{product.badge}</span> : null}
-            {discount > 0 ? <span>-{discount}%</span> : null}
+            {discount > 0 ? <span className="ed-product-tag-discount">-{discount}%</span> : null}
           </div>
         )}
 

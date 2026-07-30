@@ -87,7 +87,15 @@ export function AuthPanel({ initialMode = "login" }: AuthPanelProps) {
   }
 
   return (
-    <div id="auth" className="ed-auth">
+    <div className="ed-auth-wrap">
+      <div className="ed-checkout-tabs ed-auth-mode-tabs" role="tablist" aria-label="Login or sign up">
+        {(["login", "signup"] as const).map((item) => (
+          <button className={mode === item ? "is-active" : ""} key={item} onClick={() => setMode(item)}>
+            {item === "login" ? "Login" : "Sign up"}
+          </button>
+        ))}
+      </div>
+      <div id="auth" className="ed-auth">
       <p className="ed-eyebrow">Customer account</p>
       <h1>{mode === "signup" ? "Create your account." : "Welcome back."}</h1>
       <p className="ed-checkout-sub">Save orders, addresses, wishlist items, returns, and delivery updates.</p>
@@ -108,7 +116,7 @@ export function AuthPanel({ initialMode = "login" }: AuthPanelProps) {
             <span>{method === "Phone" ? "Mobile number" : "Email address"}</span>
             <input
               type={method === "Phone" ? "tel" : "email"}
-              placeholder={method === "Phone" ? "+233 24 000 0000" : "customer@begnon.com"}
+              placeholder={method === "Phone" ? "+233 24 000 0000" : "example@email.com"}
               value={value}
               onChange={(event) => setValue(event.target.value)}
             />
@@ -144,13 +152,6 @@ export function AuthPanel({ initialMode = "login" }: AuthPanelProps) {
                 onChange={(event) => setPassword(event.target.value)}
               />
             </label>
-            <div className="ed-checkout-tabs ed-auth-mode-tabs" role="tablist" aria-label="Email auth mode">
-              {(["login", "signup"] as const).map((item) => (
-                <button className={mode === item ? "is-active" : ""} key={item} onClick={() => setMode(item)}>
-                  {item === "login" ? "Login" : "Sign up"}
-                </button>
-              ))}
-            </div>
           </>
         ) : null}
         <button className="ed-btn-solid" disabled={isSubmitting} onClick={submit}>
@@ -170,11 +171,6 @@ export function AuthPanel({ initialMode = "login" }: AuthPanelProps) {
       </div>
 
       <p className="ed-checkout-secure">Protected checkout, order tracking, and wishlist sync.</p>
-      <div className="ed-auth-switch">
-        {mode === "login" ? "New here?" : "Already have an account?"}
-        <a href={mode === "login" ? "/register" : "/login"}>
-          {mode === "login" ? "Create account" : "Login"}
-        </a>
       </div>
     </div>
   );

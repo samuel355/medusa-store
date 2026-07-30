@@ -2,17 +2,10 @@ import { defineRouteConfig } from "@medusajs/admin-sdk";
 import { BuildingStorefront } from "@medusajs/icons";
 import { Button, Container, Heading, Text } from "@medusajs/ui";
 import { useEffect } from "react";
-
-function getShopUrl() {
-  if (window.location.hostname === "localhost") {
-    return "http://localhost:3000/shop";
-  }
-
-  return `${window.location.protocol}//${window.location.hostname}/shop`;
-}
+import { getStorefrontUrl } from "../../lib/storefront-url";
 
 const ShopRoute = () => {
-  const shopUrl = getShopUrl();
+  const shopUrl = getStorefrontUrl("/shop");
 
   useEffect(() => {
     window.location.assign(shopUrl);

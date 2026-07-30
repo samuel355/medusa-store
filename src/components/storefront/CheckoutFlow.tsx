@@ -74,9 +74,7 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false }: Che
             return;
           }
         }
-      } catch {
-        // keep polling
-      }
+      } catch {}
 
       if (attempts >= 15) {
         if (pollRef.current) clearInterval(pollRef.current);

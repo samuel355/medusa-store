@@ -36,8 +36,8 @@ export function StoreHeaderClient({ isSignedIn, isAdmin, accountHref }: StoreHea
     { href: "/shop", label: "Shop" },
     { href: "/shop?category=Men", label: "Men" },
     { href: "/shop?category=Women", label: "Women" },
-    { href: "/shop?category=New%20Arrivals", label: "New Arrivals" },
-    { href: "/shop?category=Sale", label: "Sale" },
+    { href: "/shop?pill=New%20arrivals", label: "New Arrivals" },
+    { href: "/shop?pill=Sale", label: "Sale" },
   ];
 
   return (

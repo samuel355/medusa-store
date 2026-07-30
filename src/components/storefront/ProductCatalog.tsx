@@ -1,7 +1,7 @@
 "use client";
 
-import { Search, SlidersHorizontal, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { ChevronDown, Search, SlidersHorizontal, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ProductCard } from "@/components/storefront/ProductCard";
 import { type StoreProduct } from "@/lib/db/products";
 import { useCart } from "@/lib/medusa/cart";
@@ -14,13 +14,20 @@ type ProductCatalogProps = {
 
 const PILLS = ["New arrivals", "Best sellers", "Sale", "In stock", "Top rated", "Same-day Accra"];
 const PRICE_BANDS = ["Any price", "Under GH₵200", "Under GH₵300", "GH₵300 - GH₵500", "Over GH₵500"];
+const SHOP_NAV_GENDERS = ["Men", "Women"] as const;
 
 export function ProductCatalog({ departments, products: catalogProducts }: ProductCatalogProps) {
   const { addToCart: addVariantToCart, error: cartError } = useCart();
   const [category, setCategory] = useState("All categories");
+  // Subcategory names (e.g. "Footwear") aren't unique to a gender — Men and
+  // Women both have their own "Footwear" products. Selecting a subcategory
+  // from the Men/Women nav dropdown sets this alongside `category` so the
+  // filter can scope to that gender's subcategory only, instead of matching
+  // every product with a same-named subcategory regardless of gender.
+  const [genderScope, setGenderScope] = useState<string | null>(null);
   const [delivery, setDelivery] = useState("Any delivery speed");
   const [payment, setPayment] = useState("Paystack enabled");
-  const [activePill, setActivePill] = useState("New arrivals");
+  const [activePill, setActivePill] = useState("");
   const [sort, setSort] = useState("Featured");
   const [priceBand, setPriceBand] = useState("Any price");
   const [size, setSize] = useState("Any size");
@@ -36,7 +43,19 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
   const [saved, setSaved] = useState<string[]>([]);
   const [notice, setNotice] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [openNavMenu, setOpenNavMenu] = useState<string | null>(null);
+  const shopNavRef = useRef<HTMLDivElement>(null);
   const pageSize = 8;
+
+  useEffect(() => {
+    function closeOnOutsideClick(event: MouseEvent) {
+      if (shopNavRef.current && !shopNavRef.current.contains(event.target as Node)) {
+        setOpenNavMenu(null);
+      }
+    }
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    return () => document.removeEventListener("mousedown", closeOnOutsideClick);
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -51,6 +70,9 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
     if (categoryParam && departments.includes(categoryParam)) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setCategory(categoryParam);
+      if (categoryParam === "Men" || categoryParam === "Women") {
+        setGenderScope(categoryParam);
+      }
     }
     if (pillParam && PILLS.includes(pillParam)) {
       setActivePill(pillParam);
@@ -94,13 +116,27 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
     };
   }, [catalogProducts]);
 
+  const genderSubcategories = useMemo(() => {
+    const build = (gender: string) => {
+      const counts = new Map<string, number>();
+      for (const product of catalogProducts) {
+        if (product.category === gender && product.subcategory) {
+          counts.set(product.subcategory, (counts.get(product.subcategory) ?? 0) + 1);
+        }
+      }
+      return Array.from(counts.entries()).map(([name, count]) => ({ name, count }));
+    };
+    return { Men: build("Men"), Women: build("Women") };
+  }, [catalogProducts]);
+
   const products = useMemo(() => {
     const filtered = catalogProducts.filter((product) => {
       const categoryMatch =
-        category === "All categories" ||
-        product.category === category ||
-        product.subcategory === category ||
-        product.collection === category;
+        category === "All categories"
+          ? true
+          : genderScope
+            ? product.category === genderScope && (category === genderScope || product.subcategory === category)
+            : product.category === category || product.subcategory === category || product.collection === category;
       const deliveryMatch =
         delivery === "Any delivery speed" || product.delivery.toLowerCase().includes(delivery.toLowerCase());
       const stockMatch =
@@ -111,10 +147,11 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
       const ratingMatch = activePill !== "Top rated" || Number(product.rating) >= 4.8;
       const deliveryPillMatch =
         activePill !== "Same-day Accra" || product.delivery.toLowerCase().includes("same-day accra");
+      const isOnSale = product.discountEligible || product.oldPrice > product.price;
       const merchandisingMatch =
         (activePill !== "New arrivals" || product.isNewArrival) &&
         (activePill !== "Best sellers" || product.isBestSeller) &&
-        (activePill !== "Sale" || product.discountEligible);
+        (activePill !== "Sale" || isOnSale);
       const priceMatch =
         priceBand === "Any price" ||
         (priceBand === "Under GH₵200" && product.price < 200) ||
@@ -129,7 +166,7 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
         (fabric === "Any fabric" || product.fabric === fabric) &&
         (brand === "Any brand" || product.brand === brand) &&
         (discount === "Any discount" ||
-          (discount === "Discount eligible" ? product.discountEligible : !product.discountEligible));
+          (discount === "Discount eligible" ? isOnSale : !isOnSale));
       const queryMatch =
         !query.trim() ||
         [
@@ -182,6 +219,7 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
     discount,
     fabric,
     fit,
+    genderScope,
     occasion,
     priceBand,
     query,
@@ -195,7 +233,7 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
   // Reset to page 1 whenever the filters change, adjusted directly during render
   // (React's documented alternative to an effect for this) instead of an effect,
   // so the reset applies before this render commits rather than one tick later.
-  const filterKey = JSON.stringify([activePill, availability, brand, category, color, delivery, discount, fabric, fit, occasion, priceBand, query, size, sort]);
+  const filterKey = JSON.stringify([activePill, availability, brand, category, color, delivery, discount, fabric, fit, genderScope, occasion, priceBand, query, size, sort]);
   const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
   if (filterKey !== prevFilterKey) {
     setPrevFilterKey(filterKey);
@@ -215,6 +253,7 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
 
   function resetFilters() {
     setCategory("All categories");
+    setGenderScope(null);
     setDelivery("Any delivery speed");
     setPriceBand("Any price");
     setSize("Any size");
@@ -227,9 +266,11 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
     setDiscount("Any discount");
     setPayment("Paystack enabled");
     setSort("Featured");
-    setActivePill("New arrivals");
+    setActivePill("");
     setQuery("");
   }
+
+  const isAllActive = category === "All categories" && !genderScope && !activePill && priceBand === "Any price";
 
   const activeFilterCount = [
     category !== "All categories",
@@ -277,12 +318,80 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
       {notice ? <p className="ed-notice">{notice}</p> : null}
 
       <div className="ed-shop-bar">
-        <div className="ed-shop-pills">
-          {PILLS.map((pill) => (
-            <button className={activePill === pill ? "is-active" : ""} key={pill} onClick={() => setActivePill(pill)}>
-              {pill}
-            </button>
-          ))}
+        <div className="ed-shop-nav" ref={shopNavRef}>
+          <button
+            type="button"
+            className={isAllActive ? "is-active" : ""}
+            onClick={() => {
+              setCategory("All categories");
+              setGenderScope(null);
+              setActivePill("");
+              setPriceBand("Any price");
+              setOpenNavMenu(null);
+            }}
+          >
+            All
+          </button>
+          {SHOP_NAV_GENDERS.map((gender) => {
+            const subcategories = genderSubcategories[gender];
+            const isGenderActive =
+              category === gender || (genderScope === gender && subcategories.some((sub) => sub.name === category));
+            return (
+              <div className="ed-shop-nav-item" key={gender}>
+                <button
+                  type="button"
+                  className={isGenderActive ? "is-active" : ""}
+                  onClick={() => {
+                    if (isGenderActive) {
+                      setCategory("All categories");
+                      setGenderScope(null);
+                      setOpenNavMenu(null);
+                    } else {
+                      setCategory(gender);
+                      setGenderScope(gender);
+                      setOpenNavMenu(gender);
+                    }
+                  }}
+                >
+                  {gender}
+                  {subcategories.length > 0 ? <ChevronDown size={13} /> : null}
+                </button>
+                {subcategories.length > 0 && openNavMenu === gender ? (
+                  <div className="ed-shop-nav-dropdown">
+                    {subcategories.map((sub) => (
+                      <button
+                        type="button"
+                        key={sub.name}
+                        className={genderScope === gender && category === sub.name ? "is-active" : ""}
+                        onClick={() => {
+                          setCategory(sub.name);
+                          setGenderScope(gender);
+                          setOpenNavMenu(null);
+                        }}
+                      >
+                        {sub.name}
+                        <span>{sub.count}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+          <button
+            type="button"
+            className={activePill === "New arrivals" ? "is-active" : ""}
+            onClick={() => setActivePill(activePill === "New arrivals" ? "" : "New arrivals")}
+          >
+            New Arrivals
+          </button>
+          <button
+            type="button"
+            className={priceBand === "Under GH₵200" ? "is-active" : ""}
+            onClick={() => setPriceBand(priceBand === "Under GH₵200" ? "Any price" : "Under GH₵200")}
+          >
+            Under GH₵200
+          </button>
         </div>
         <button type="button" className="ed-filter-trigger" onClick={() => setIsFilterOpen(true)}>
           <SlidersHorizontal size={15} />
@@ -315,7 +424,14 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
           <div className="ed-filter-section">
             <label>
               <span>Category</span>
-              <select value={category} onChange={(event) => setCategory(event.target.value)}>
+              <select
+                value={category}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setCategory(value);
+                  setGenderScope(value === "Men" || value === "Women" ? value : null);
+                }}
+              >
                 <option>All categories</option>
                 {departments.slice(0, 10).map((department) => (
                   <option key={department}>{department}</option>
@@ -434,26 +550,36 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
           </button>
         </aside>
 
-        <div className="ed-product-grid ed-shop-grid">
-          {paginatedProducts.map((product) => (
-            <ProductCard
-              key={product.slug}
-              product={product}
-              saved={saved.includes(product.id)}
-              onWishlistToggle={async () => {
-                const result = await toggleWishlistItem(product.id);
-                if (result.requiresAuth) {
-                  setNotice("Sign in to save products to your wishlist.");
-                  return;
-                }
-                setSaved((current) =>
-                  result.inWishlist ? [...current, product.id] : current.filter((id) => id !== product.id)
-                );
-              }}
-              onQuickAdd={() => addToCart(product)}
-            />
-          ))}
-        </div>
+        {paginatedProducts.length > 0 ? (
+          <div className="ed-product-grid ed-shop-grid">
+            {paginatedProducts.map((product) => (
+              <ProductCard
+                key={product.slug}
+                product={product}
+                saved={saved.includes(product.id)}
+                onWishlistToggle={async () => {
+                  const result = await toggleWishlistItem(product.id);
+                  if (result.requiresAuth) {
+                    setNotice("Sign in to save products to your wishlist.");
+                    return;
+                  }
+                  setSaved((current) =>
+                    result.inWishlist ? [...current, product.id] : current.filter((id) => id !== product.id)
+                  );
+                }}
+                onQuickAdd={() => addToCart(product)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="ed-empty">
+            <h2>No products found.</h2>
+            <p>Nothing matches these filters yet. Try clearing the search or choosing another category, delivery speed, or price range.</p>
+            <button className="ed-text-link" type="button" onClick={resetFilters}>
+              Reset filters
+            </button>
+          </div>
+        )}
       </div>
 
       {cartError ? (
@@ -461,33 +587,26 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
           {cartError.message}
         </p>
       ) : null}
-      {!paginatedProducts.length ? (
-        <div className="ed-empty">
-          <h2>No products match those filters.</h2>
-          <p>Clear the search or choose another category, delivery speed, or price range.</p>
-          <button className="ed-text-link" type="button" onClick={resetFilters}>
-            Reset filters
+
+      {paginatedProducts.length > 0 ? (
+        <div className="ed-pagination" aria-label="Product pages">
+          <button disabled={page === 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>
+            Previous
+          </button>
+          {Array.from({ length: pageCount }, (_, index) => index + 1).map((pageNumber) => (
+            <button
+              className={page === pageNumber ? "is-active" : ""}
+              key={pageNumber}
+              onClick={() => setPage(pageNumber)}
+            >
+              {pageNumber}
+            </button>
+          ))}
+          <button disabled={page === pageCount} onClick={() => setPage((current) => Math.min(pageCount, current + 1))}>
+            Next
           </button>
         </div>
       ) : null}
-
-      <div className="ed-pagination" aria-label="Product pages">
-        <button disabled={page === 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>
-          Previous
-        </button>
-        {Array.from({ length: pageCount }, (_, index) => index + 1).map((pageNumber) => (
-          <button
-            className={page === pageNumber ? "is-active" : ""}
-            key={pageNumber}
-            onClick={() => setPage(pageNumber)}
-          >
-            {pageNumber}
-          </button>
-        ))}
-        <button disabled={page === pageCount} onClick={() => setPage((current) => Math.min(pageCount, current + 1))}>
-          Next
-        </button>
-      </div>
     </section>
   );
 }

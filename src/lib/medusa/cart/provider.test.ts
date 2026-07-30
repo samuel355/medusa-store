@@ -88,6 +88,91 @@ test("retains typed loading and mutation failures without replacing cart state",
   assert.equal(mutation.getState().cart.id, "cart_1");
 });
 
+test("add recovers from a cart poisoned by an uncancellable captured payment session", async () => {
+  // Simulates a cart left over from a checkout that captured payment via
+  // Paystack but failed to finish creating the order — Medusa can never
+  // delete that payment session, so every edit 500s with this exact message
+  // until the shopper is moved onto a fresh cart.
+  const removed: string[] = [];
+  const storage = { getItem: () => "cart_poisoned", setItem: () => {}, removeItem: (key: string) => removed.push(key) };
+  let addCalls = 0;
+  const dataSource = createMedusaCartDataSource(storage, {
+    create: async () => empty("cart_fresh"),
+    retrieve: async () => empty("cart_poisoned"),
+    add: async () => {
+      addCalls += 1;
+      if (addCalls === 1) throw new MedusaCartOperationError("add line item", new Error("Could not delete all payment sessions"));
+      return empty("cart_fresh");
+    },
+    update: async () => empty(),
+    remove: async () => empty(),
+  });
+  await dataSource.initialize();
+  const result = await dataSource.add("variant_1", 1);
+  assert.equal(result.id, "cart_fresh");
+  assert.equal(addCalls, 2);
+  assert.deepEqual(removed, ["begnon_medusa_cart_id"]);
+});
+
+test("update and remove abandon a poisoned cart instead of retrying a now-nonexistent line item", async () => {
+  const storage = { getItem: () => "cart_poisoned", setItem: () => {}, removeItem: () => {} };
+  const poisonedError = new MedusaCartOperationError("update line item", new Error("Could not delete all payment sessions"));
+  const dataSource = createMedusaCartDataSource(storage, {
+    create: async () => empty("cart_fresh"),
+    retrieve: async () => empty("cart_poisoned"),
+    add: async () => empty(),
+    update: async () => { throw poisonedError; },
+    remove: async () => { throw poisonedError; },
+  });
+  await dataSource.initialize();
+  const afterUpdate = await dataSource.update("item_1", 2);
+  assert.equal(afterUpdate.id, "cart_fresh");
+  const afterRemove = await dataSource.remove("item_1");
+  assert.equal(afterRemove.id, "cart_fresh");
+});
+
+test("initialize recovers from a stored cart ID that no longer exists server-side", async () => {
+  const removed: string[] = [];
+  const storage = { getItem: () => "cart_deleted", setItem: () => {}, removeItem: (key: string) => removed.push(key) };
+  const notFoundError = new MedusaCartOperationError("retrieve", Object.assign(new Error("Cart with id 'cart_deleted' not found"), { status: 404 }));
+  const dataSource = createMedusaCartDataSource(storage, {
+    create: async () => empty("cart_fresh"),
+    retrieve: async () => { throw notFoundError; },
+    add: async () => empty(),
+    update: async () => empty(),
+    remove: async () => empty(),
+  });
+  const cart = await dataSource.initialize();
+  assert.equal(cart.id, "cart_fresh");
+});
+
+test("initialize does not swallow a retrieve failure unrelated to a missing cart", async () => {
+  const storage = { getItem: () => "cart_1", setItem: () => {}, removeItem: () => {} };
+  const serverError = new MedusaCartOperationError("retrieve", Object.assign(new Error("Internal server error"), { status: 500 }));
+  const dataSource = createMedusaCartDataSource(storage, {
+    create: async () => empty(),
+    retrieve: async () => { throw serverError; },
+    add: async () => empty(),
+    update: async () => empty(),
+    remove: async () => empty(),
+  });
+  await assert.rejects(dataSource.initialize(), (error) => error === serverError);
+});
+
+test("an unrelated mutation failure is not mistaken for a poisoned cart", async () => {
+  const storage = { getItem: () => "cart_1", setItem: () => {}, removeItem: () => {} };
+  const outOfStockError = new MedusaCartOperationError("add line item", new Error("Variant is out of stock"));
+  const dataSource = createMedusaCartDataSource(storage, {
+    create: async () => empty(),
+    retrieve: async () => empty("cart_1"),
+    add: async () => { throw outOfStockError; },
+    update: async () => empty(),
+    remove: async () => empty(),
+  });
+  await dataSource.initialize();
+  await assert.rejects(dataSource.add("variant_1", 1), (error) => error === outOfStockError);
+});
+
 test("legacy compatibility is the default until explicitly enabled", () => {
   assert.equal(isMedusaCartEnabled({}), false);
   assert.equal(isMedusaCartEnabled({ NEXT_PUBLIC_MEDUSA_CART_ENABLED: "false" }), false);

@@ -50,12 +50,14 @@ function buildShopByTiles(products: StoreProduct[], categories: { id: string; na
 export default async function Home() {
   const [products, categories] = await Promise.all([getActiveProducts(), getActiveCategories()]);
   const featuredProducts = products.slice(0, 8);
-  const heroProduct = products[0];
+  const heroSlides = products.slice(0, 3);
+  const heroSideTop = products[3];
+  const heroSideBottom = products[4];
   const shopByTiles = buildShopByTiles(products, categories);
 
   return (
     <AppShell className="storefront home">
-      <HomeHero featured={heroProduct} />
+      <HomeHero slides={heroSlides} sideTop={heroSideTop} sideBottom={heroSideBottom} />
 
       {shopByTiles.length > 0 ? (
         <section className="ed-section ed-categories">

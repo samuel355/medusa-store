@@ -1,34 +1,37 @@
-import { ArrowRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { type StoreProduct } from "@/lib/db/products";
+import { formatMoney } from "@/lib/utils/money";
+import { HeroCarousel } from "@/components/storefront/HeroCarousel";
 
 type HomeHeroProps = {
-  featured?: StoreProduct;
+  slides: StoreProduct[];
+  sideTop?: StoreProduct;
+  sideBottom?: StoreProduct;
 };
 
-export function HomeHero({ featured }: HomeHeroProps) {
-  if (!featured) return null;
+function HeroSide({ product, position }: { product: StoreProduct; position: "top" | "bottom" }) {
+  return (
+    <Link href={`/products/${product.slug}`} className={`ed-hero-side ed-hero-side-${position}`}>
+      <Image src={product.image} alt={product.name} fill sizes="(max-width: 900px) 100vw, 38vw" />
+      <div className="ed-hero-side-scrim" />
+      <div className="ed-hero-side-copy">
+        <em>{product.category}</em>
+        <strong>{product.name}</strong>
+        <span>{formatMoney(product.price)}</span>
+      </div>
+    </Link>
+  );
+}
+
+export function HomeHero({ slides, sideTop, sideBottom }: HomeHeroProps) {
+  if (slides.length === 0) return null;
 
   return (
-    <section className="ed-hero">
-      <Image
-        src={featured.image}
-        alt={featured.name}
-        fill
-        sizes="100vw"
-        priority
-        className="ed-hero-image"
-      />
-      <div className="ed-hero-scrim" />
-      <div className="ed-hero-copy">
-        <p>{featured.badge || "New this week"}</p>
-        <h1>Curated style for everyday Ghana</h1>
-        <Link className="ed-text-link" href="/shop">
-          Shop the collection
-          <ArrowRight size={16} />
-        </Link>
-      </div>
+    <section className="ed-hero-grid">
+      <HeroCarousel slides={slides} />
+      {sideTop ? <HeroSide product={sideTop} position="top" /> : null}
+      {sideBottom ? <HeroSide product={sideBottom} position="bottom" /> : null}
     </section>
   );
 }
