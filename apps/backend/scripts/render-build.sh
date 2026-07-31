@@ -26,7 +26,13 @@ retry() {
 # instead of re-fetching the whole dependency tree from scratch each retry.
 export npm_config_maxsockets=3
 
-retry npm ci --prefer-offline
+# @medusajs/cli's entrypoint does require("ts-node").register({}) to load
+# medusa-config.ts, silently no-op'ing if that fails (and NODE_ENV=production
+# suppresses even the warning). ts-node is a devDependency here, and NODE_ENV
+# =production makes npm ci skip devDependencies by default — so without
+# --include=dev, ts-node never installs and medusa-config.ts can't load at
+# all, failing later with a misleading "Cannot find module" error.
+retry npm ci --prefer-offline --include=dev
 npm run build
 cd .medusa/server
 retry npm install --omit=dev --prefer-offline
