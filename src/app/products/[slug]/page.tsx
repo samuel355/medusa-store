@@ -5,13 +5,10 @@ import { AppShell } from "@/components/store/AppShell";
 import { ProductCard } from "@/components/storefront/ProductCard";
 import { ProductGallery } from "@/components/storefront/ProductGallery";
 import { ProductPurchasePanel } from "@/components/storefront/ProductPurchasePanel";
-import { getActiveProducts, getProductBySlug, getRelatedProducts } from "@/lib/db/products";
+import { getProductBySlug, getRelatedProducts } from "@/lib/db/products";
 import { formatMoney } from "@/lib/utils/money";
 
-export async function generateStaticParams() {
-  const products = await getActiveProducts();
-  return products.map((product) => ({ slug: product.slug }));
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;

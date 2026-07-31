@@ -1,9 +1,11 @@
-import dynamic from "next/dynamic";
+import dynamicImport from "next/dynamic";
 import { AppShell } from "@/components/store/AppShell";
 import { getActiveProducts } from "@/lib/db/products";
 import { getActiveCategories } from "@/lib/db/categories";
 
-const ProductCatalog = dynamic(
+export const dynamic = "force-dynamic";
+
+const ProductCatalog = dynamicImport(
   () => import("@/components/storefront/ProductCatalog").then((mod) => mod.ProductCatalog),
   {
     loading: () => (

@@ -16,3 +16,5 @@ pnpm-debug.log*
 tsconfig.tsbuildinfo
 .DS_Store
 logs
+.vercel
+.env*

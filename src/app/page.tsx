@@ -8,6 +8,8 @@ import { getActiveProducts, type StoreProduct } from "@/lib/db/products";
 import { getActiveCategories } from "@/lib/db/categories";
 import { storeBrand } from "@/lib/store/brand";
 
+export const dynamic = "force-dynamic";
+
 const UNDER_PRICE_CEDIS = 200;
 
 function buildShopByTiles(products: StoreProduct[], categories: { id: string; name: string }[]) {
