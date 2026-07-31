@@ -9,8 +9,11 @@ services:
     startCommand: npm run start
     healthCheckPath: /health
     envVars:
+      # Medusa's config loader does require("medusa-config") with no
+      # extension, relying on Node's native .ts resolution (stable by
+      # default from Node 23.6+) — Node 20 can't find the file at all.
       - key: NODE_VERSION
-        value: 20.19.0
+        value: 24.16.0
       - key: NODE_ENV
         value: production
       # Retry transient npm registry errors (e.g. 429s) instead of failing the build.
