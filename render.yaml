@@ -5,7 +5,7 @@ services:
     plan: starter
     region: frankfurt
     rootDir: apps/backend
-    buildCommand: npm ci && npm run build && cd .medusa/server && npm install --omit=dev
+    buildCommand: bash scripts/render-build.sh
     startCommand: npm run start
     healthCheckPath: /health
     envVars:
@@ -56,6 +56,20 @@ services:
         sync: false
 
       - key: ARKESEL_API_KEY
+        sync: false
+      - key: ARKESEL_SENDER_ID
+        sync: false
+
+      - key: RESEND_API_KEY
+        sync: false
+      # onboarding@resend.dev needs no domain verification. Switch to a
+      # verified custom-domain address once one exists.
+      - key: RESEND_FROM_EMAIL
+        value: "Begnon <onboarding@resend.dev>"
+
+      - key: PLATFORM_ADMIN_PHONE
+        sync: false
+      - key: PLATFORM_ADMIN_EMAIL
         sync: false
 
       - key: R2_ACCOUNT_ID

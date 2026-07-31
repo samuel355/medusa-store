@@ -27,6 +27,27 @@ const redisModules = redisEnabled ? [
   },
 ] : [];
 
+const notificationProviders = [
+  ...(process.env.RESEND_API_KEY ? [{
+    resolve: "./src/modules/resend-notification",
+    id: "resend",
+    options: {
+      channels: ["email"],
+      apiKey: process.env.RESEND_API_KEY,
+      from: process.env.RESEND_FROM_EMAIL,
+    },
+  }] : []),
+  ...(process.env.ARKESEL_API_KEY ? [{
+    resolve: "./src/modules/arkesel-notification",
+    id: "arkesel",
+    options: {
+      channels: ["sms"],
+      apiKey: process.env.ARKESEL_API_KEY,
+      sender: process.env.ARKESEL_SENDER_ID,
+    },
+  }] : []),
+];
+
 module.exports = defineConfig({
   admin: {
     disable: false,
@@ -48,6 +69,10 @@ module.exports = defineConfig({
         ],
       },
     },
+    ...(notificationProviders.length ? [{
+      resolve: "@medusajs/medusa/notification",
+      options: { providers: notificationProviders },
+    }] : []),
     {
       resolve: "@medusajs/medusa/file",
       options: {
