@@ -98,6 +98,14 @@ module.exports = defineConfig({
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
     databaseSchema: process.env.DATABASE_SCHEMA || "medusastore",
+    // Knex's own default (min:2, max:10) queues the 11th+ concurrent
+    // DB-touching request instead of erroring, but 10 is low headroom given
+    // each request holds its connection for a while (Supabase is remote,
+    // ~150-200ms per round trip, and workflows like checkout make 15-20+
+    // sequential queries). Safe to raise since this connects through
+    // Supabase's transaction pooler (port 6543), not raw Postgres, so it
+    // doesn't compete for Postgres's own low connection ceiling directly.
+    databaseDriverOptions: { pool: { min: 2, max: 20 } },
     ...(redisEnabled ? { redisUrl } : {}),
     http: {
       storeCors: process.env.STORE_CORS!,
