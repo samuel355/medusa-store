@@ -1,9 +1,10 @@
 "use client";
 
-import { CheckCircle2, Minus, Plus, ShoppingBag, Zap } from "lucide-react";
+import { Minus, Plus, ShoppingBag, Zap } from "lucide-react";
 import { useState } from "react";
 import { type StoreProduct } from "@/lib/db/products";
 import { useCart } from "@/lib/medusa/cart";
+import { useToast } from "@/components/storefront/Toast";
 import { formatMoney } from "@/lib/utils/money";
 
 export function ProductPurchasePanel({
@@ -16,16 +17,16 @@ export function ProductPurchasePanel({
   const [quantity, setQuantity] = useState(1);
   const [size, setSize] = useState(product.sizes[0] ?? "");
   const [color, setColor] = useState(product.colors[0] ?? "");
-  const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { addToCart, error: cartError } = useCart();
+  const { showToast } = useToast();
 
   async function addItems() {
     setIsSubmitting(true);
     try {
       await addToCart(product.variantId, quantity);
       const variant = [size, color].filter(Boolean).join(" / ");
-      setMessage(`${quantity} item(s) added${variant ? `: ${variant}` : "."}`);
+      showToast(`${quantity} item(s) added${variant ? `: ${variant}` : "."}`);
     } catch {
       // The shared provider exposes the mutation error in the visible alert.
     } finally {
@@ -87,12 +88,6 @@ export function ProductPurchasePanel({
           Buy now
         </button>
       </div>
-      {message ? (
-        <p className="ed-buybox-notice">
-          <CheckCircle2 size={15} />
-          {message} <a href="/cart">View cart</a>
-        </p>
-      ) : null}
       {cartError ? <p className="ed-buybox-notice" role="alert">{cartError.message}</p> : null}
     </div>
   );

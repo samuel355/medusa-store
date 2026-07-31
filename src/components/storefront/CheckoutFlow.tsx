@@ -1,6 +1,7 @@
 "use client";
 
 import { CheckCircle2, CreditCard, Loader2, LogIn, ShieldCheck, Smartphone, UserRound } from "lucide-react";
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { type CartResponse } from "@/lib/utils/cart";
 import { medusaSdk } from "@/lib/medusa/sdk";
@@ -292,7 +293,10 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false }: Che
       <div className="ed-checkout-main">
         {!showForm ? (
           <div className="ed-checkout-panel">
-            <p className="ed-eyebrow">Step 1</p>
+            <div className="ed-checkout-step">
+              <span className="ed-checkout-step-number">1</span>
+              <p className="ed-eyebrow">Step 1</p>
+            </div>
             <h2>Sign in or continue as guest.</h2>
             <p className="ed-checkout-sub">Signing in saves this order to your account and pre-fills your details next time.</p>
             <div className="ed-checkout-gate-actions">
@@ -309,7 +313,10 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false }: Che
         ) : (
           <>
             <div className="ed-checkout-panel">
-              <p className="ed-eyebrow">Step 1</p>
+              <div className="ed-checkout-step">
+                <span className="ed-checkout-step-number">1</span>
+                <p className="ed-eyebrow">Step 1</p>
+              </div>
               <h2>{isSignedIn ? `Signed in as ${customer?.displayName || email}` : "Checking out as guest"}</h2>
               {!isSignedIn ? (
                 <p className="ed-checkout-sub">
@@ -333,7 +340,10 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false }: Che
             </div>
 
             <div className="ed-checkout-panel">
-              <p className="ed-eyebrow">Step 2</p>
+              <div className="ed-checkout-step">
+                <span className="ed-checkout-step-number">2</span>
+                <p className="ed-eyebrow">Step 2</p>
+              </div>
               <h2>Choose how to pay.</h2>
               <div className="ed-checkout-tabs" role="tablist" aria-label="Payment method">
                 <button className={paymentMethod === "mobile_money" ? "is-active" : ""} onClick={() => setPaymentMethod("mobile_money")}>
@@ -415,11 +425,16 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false }: Che
         <h2>{cart.totals.quantity} item{cart.totals.quantity === 1 ? "" : "s"}</h2>
         <div className="ed-bag-summary-lines">
           {cart.items.map((item) => (
-            <div key={item.id}>
-              <span>
-                {item.quantity}x {item.name}
-              </span>
-              <span>{formatMoney(item.lineTotal)}</span>
+            <div className="ed-checkout-summary-item" key={item.id}>
+              <div className="ed-checkout-summary-thumb">
+                <Image src={item.image} alt={item.name} fill sizes="44px" />
+              </div>
+              <div className="ed-checkout-summary-item-lines">
+                <span>
+                  {item.quantity}x {item.name}
+                </span>
+                <span>{formatMoney(item.lineTotal)}</span>
+              </div>
             </div>
           ))}
         </div>

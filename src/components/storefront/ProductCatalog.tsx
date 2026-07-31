@@ -3,6 +3,7 @@
 import { ChevronDown, Search, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ProductCard } from "@/components/storefront/ProductCard";
+import { useToast } from "@/components/storefront/Toast";
 import { type StoreProduct } from "@/lib/db/products";
 import { useCart } from "@/lib/medusa/cart";
 import { fetchWishlist, toggleWishlistItem } from "@/lib/utils/wishlist";
@@ -18,6 +19,7 @@ const SHOP_NAV_GENDERS = ["Men", "Women"] as const;
 
 export function ProductCatalog({ departments, products: catalogProducts }: ProductCatalogProps) {
   const { addToCart: addVariantToCart, error: cartError } = useCart();
+  const { showToast } = useToast();
   const [category, setCategory] = useState("All categories");
   // Subcategory names like "Footwear" aren't unique to a gender, so this
   // scopes the filter to the selected gender's subcategory only.
@@ -38,7 +40,6 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const [saved, setSaved] = useState<string[]>([]);
-  const [notice, setNotice] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [openNavMenu, setOpenNavMenu] = useState<string | null>(null);
   const shopNavRef = useRef<HTMLDivElement>(null);
@@ -239,7 +240,7 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
     const defaultColor = product.colors[0];
     try {
       await addVariantToCart(product.variantId, 1);
-      setNotice(`${product.name} added to cart${defaultSize || defaultColor ? ` (${[defaultSize, defaultColor].filter(Boolean).join(" / ")})` : ""}.`);
+      showToast(`${product.name} added to cart${defaultSize || defaultColor ? ` (${[defaultSize, defaultColor].filter(Boolean).join(" / ")})` : ""}.`);
     } catch {
       // The shared provider exposes the mutation error in the visible alert.
     }
@@ -309,7 +310,6 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
           </label>
         </div>
       </div>
-      {notice ? <p className="ed-notice">{notice}</p> : null}
 
       <div className="ed-shop-bar">
         <div className="ed-shop-nav" ref={shopNavRef}>
@@ -554,7 +554,7 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
                 onWishlistToggle={async () => {
                   const result = await toggleWishlistItem(product.id);
                   if (result.requiresAuth) {
-                    setNotice("Sign in to save products to your wishlist.");
+                    showToast("Sign in to save products to your wishlist.");
                     return;
                   }
                   setSaved((current) =>

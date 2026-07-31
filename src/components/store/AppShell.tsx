@@ -1,5 +1,6 @@
 import { StoreHeader } from "@/components/store/StoreHeader";
 import { StoreFooter } from "@/components/store/StoreFooter";
+import { ToastProvider } from "@/components/storefront/Toast";
 import { CartProvider } from "@/lib/medusa/cart";
 
 export function AppShell({
@@ -11,11 +12,13 @@ export function AppShell({
 }>) {
   return (
     <CartProvider>
-      <main className={`marketplace ${className}`.trim()}>
-        <StoreHeader />
-        {children}
-        <StoreFooter />
-      </main>
+      <ToastProvider>
+        <main className={`marketplace ${className}`.trim()}>
+          <StoreHeader />
+          {children}
+          <StoreFooter />
+        </main>
+      </ToastProvider>
     </CartProvider>
   );
 }
