@@ -16,6 +16,14 @@ services:
         value: 24.16.0
       - key: NODE_ENV
         value: production
+      # Starter's 512MB container is tight for Medusa (framework + ~15
+      # modules + the bundled admin dashboard in one process). V8 in
+      # containers can under-detect available memory and GC too late,
+      # crashing with "Ineffective mark-compacts" instead of collecting
+      # proactively. Capping the heap below the container limit forces
+      # earlier, more frequent GC instead of running up against the wall.
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=400
       # Retry transient npm registry errors (e.g. 429s) instead of failing the build.
       - key: npm_config_fetch_retries
         value: "5"
