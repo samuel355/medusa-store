@@ -17,7 +17,7 @@ type StoreHeaderClientProps = {
 export function StoreHeaderClient({ isSignedIn, isAdmin, accountHref }: StoreHeaderClientProps) {
   const router = useRouter();
   const { cart } = useCart();
-  const cartCount = cart.totals.quantity;
+  const cartCount = cart.items.length;
   const [query, setQuery] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpenMobile, setIsSearchOpenMobile] = useState(false);
