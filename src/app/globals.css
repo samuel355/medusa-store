@@ -2654,6 +2654,7 @@ strong,
   display: grid;
   gap: 0.65rem;
   padding: 2.6rem 2.6rem 2.4rem;
+  margin: 0 0 1rem 1rem;
   color: #fdfaf6;
 }
 
@@ -2667,10 +2668,10 @@ strong,
 }
 
 .ed-hero-feature-copy h1 {
-  max-width: 520px;
+  max-width: 620px;
   margin: 0;
   color: #fdfaf6;
-  font-size: clamp(2.4rem, 4.4vw, 3.8rem);
+  font-size: clamp(2.6rem, 5vw, 4.4rem);
   font-weight: 800;
   line-height: 1.03;
   letter-spacing: -0.02em;
@@ -2751,6 +2752,7 @@ strong,
   display: grid;
   gap: 0.15rem;
   padding: 1.2rem 1.3rem;
+  margin: 0 0 0.6rem 0.6rem;
   color: #fdfaf6;
 }
 
@@ -3049,6 +3051,15 @@ strong,
 
   .ed-hero-feature-copy {
     padding: 1.6rem;
+    margin: 0 0 0.5rem 0.5rem;
+  }
+
+  .ed-hero-feature-copy h1 {
+    font-size: clamp(1.9rem, 8vw, 2.6rem);
+  }
+
+  .ed-hero-side-copy {
+    margin: 0 0 0.4rem 0.4rem;
   }
 
   .ed-product-grid {
@@ -4659,14 +4670,6 @@ strong,
   animation: ed-hero-copy-in 480ms ease;
 }
 
-.ed-hero-feature-copy h1 {
-  max-width: 560px;
-  font-size: clamp(2rem, 4vw, 3.4rem);
-  font-weight: 700;
-  line-height: 1.06;
-  letter-spacing: -0.02em;
-}
-
 .ed-hero-feature-price {
   color: #ffb27a;
   font-size: 1.05rem;
@@ -4692,8 +4695,6 @@ strong,
 }
 
 .ed-hero-grid {
-  width: min(1280px, calc(100% - 28px));
-  margin: 0 auto 5rem;
   border-radius: 4px;
   overflow: hidden;
 }
