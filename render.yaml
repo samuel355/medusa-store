@@ -57,8 +57,9 @@ services:
       - key: AUTH_CORS
         sync: false
 
-      # Storefront URL for the admin's "Open shop" links (storefront-url.ts).
-      - key: PLUGIN_STOREFRONT_URL
+      # Storefront URL for the admin's "Shop" link and the /welcome landing
+      # page (storefront-url.ts, src/api/welcome/route.ts).
+      - key: PLUGIN_STORE_URL
         sync: false
 
       - key: PAYSTACK_SECRET_KEY
