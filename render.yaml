@@ -5,7 +5,7 @@ services:
     plan: starter
     region: frankfurt
     rootDir: apps/backend
-    buildCommand: bash scripts/render-build.sh
+    buildCommand: bash scripts/ci-build.sh
     startCommand: npm run start
     healthCheckPath: /health
     envVars:

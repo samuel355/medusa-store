@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Render's shared build infrastructure gets rate-limited (429) by the public
-# npm registry often enough that npm's own internal fetch-retries aren't
-# reliable on their own. Retry the whole install step, not just one request.
+# Shared build infrastructure (Render, Railway, ...) gets rate-limited (429) by
+# the public npm registry often enough that npm's own internal fetch-retries
+# aren't reliable on their own. Retry the whole install step, not just one request.
 set -euo pipefail
 
 retry() {
@@ -16,7 +16,7 @@ retry() {
     echo "Attempt $attempt failed, retrying in ${delay}s..." >&2
     sleep "$delay"
     attempt=$((attempt + 1))
-    # Cap growth so a run of failures doesn't blow past Render's build timeout.
+    # Cap growth so a run of failures doesn't blow past the platform's build timeout.
     if [ "$delay" -lt 60 ]; then delay=$((delay * 2)); fi
   done
 }
