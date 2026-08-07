@@ -8,7 +8,7 @@ import { ProductPurchasePanel } from "@/components/storefront/ProductPurchasePan
 import { getProductBySlug, getRelatedProducts } from "@/lib/db/products";
 import { formatMoney } from "@/lib/utils/money";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;

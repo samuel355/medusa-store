@@ -3,7 +3,7 @@ import { AppShell } from "@/components/store/AppShell";
 import { getActiveProducts } from "@/lib/db/products";
 import { getActiveCategories } from "@/lib/db/categories";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 const ProductCatalog = dynamicImport(
   () => import("@/components/storefront/ProductCatalog").then((mod) => mod.ProductCatalog),

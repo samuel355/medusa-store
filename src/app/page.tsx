@@ -8,7 +8,7 @@ import { getActiveProducts, type StoreProduct } from "@/lib/db/products";
 import { getActiveCategories } from "@/lib/db/categories";
 import { storeBrand } from "@/lib/store/brand";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 const UNDER_PRICE_CEDIS = 200;
 
@@ -47,7 +47,10 @@ function buildShopByTiles(products: StoreProduct[], categories: { id: string; na
 }
 
 export default async function Home() {
-  const [products, categories] = await Promise.all([getActiveProducts(), getActiveCategories()]);
+  const results = await Promise.allSettled([getActiveProducts(), getActiveCategories()]);
+  const products = results[0].status === 'fulfilled' ? (results[0] as PromiseFulfilledResult<typeof getActiveProducts extends () => Promise<infer R> ? R : never>).value : [];
+  const categories = results[1].status === 'fulfilled' ? (results[1] as PromiseFulfilledResult<typeof getActiveCategories extends () => Promise<infer R> ? R : never>).value : [];
+
   const featuredProducts = products.slice(0, 8);
   const heroSlides = products.slice(0, 3);
   const heroSideTop = products[3];

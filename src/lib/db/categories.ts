@@ -5,7 +5,12 @@ import { medusaCatalogue, type StoreCategory } from "@/lib/medusa/catalogue";
 export type { StoreCategory } from "@/lib/medusa/catalogue";
 
 async function queryActiveCategories(): Promise<StoreCategory[]> {
-  return medusaCatalogue.listCategories();
+  try {
+    return await medusaCatalogue.listCategories();
+  } catch (err) {
+    console.error('medusa catalogue listCategories failed:', err);
+    return [];
+  }
 }
 
 export const getActiveCategories = unstable_cache(queryActiveCategories, ["medusa-active-categories"], {

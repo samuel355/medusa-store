@@ -20,6 +20,7 @@ export function StoreHeaderClient({ isSignedIn, isAdmin, accountHref }: StoreHea
   const cartCount = cart.totals.quantity;
   const [query, setQuery] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSearchOpenMobile, setIsSearchOpenMobile] = useState(false);
 
   function search(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -41,7 +42,14 @@ export function StoreHeaderClient({ isSignedIn, isAdmin, accountHref }: StoreHea
   ];
 
   return (
-    <header className="topbar">
+    <>
+      <div className="store-announcement">
+        <p>
+          Free delivery in Accra on orders over GH₵300 · Mobile Money checkout ·{" "}
+          <Link href="/shop?pill=New%20arrivals">Shop new arrivals</Link>
+        </p>
+      </div>
+      <header className="topbar">
       <div className="topbar-inner">
         <Link className="brand" href="/">
           <span className="brand-mark">
@@ -49,7 +57,7 @@ export function StoreHeaderClient({ isSignedIn, isAdmin, accountHref }: StoreHea
           </span>
           {storeBrand.name}
         </Link>
-        <form className="search-bar" role="search" onSubmit={search}>
+        <form className={`search-bar ${isSearchOpenMobile ? "open" : ""}`} role="search" onSubmit={search}>
           <Search size={18} aria-hidden="true" />
           <input
             aria-label="Search products"
@@ -59,6 +67,18 @@ export function StoreHeaderClient({ isSignedIn, isAdmin, accountHref }: StoreHea
           />
           <button type="submit">Search</button>
         </form>
+        <button
+          className="icon-button mobile-search-toggle"
+          aria-label={isSearchOpenMobile ? "Close search" : "Open search"}
+          onClick={() => {
+            setIsSearchOpenMobile((v) => !v);
+            if (!isSearchOpenMobile) {
+              setTimeout(() => (document.querySelector('.search-bar input') as HTMLInputElement | null)?.focus(), 80);
+            }
+          }}
+        >
+          {isSearchOpenMobile ? <X size={16} /> : <Search size={16} />}
+        </button>
         <div className="nav-actions">
           <Link href={accountHref} aria-label={isAdmin ? "Dashboard" : "Account"} title={isAdmin ? "Dashboard" : "Account"}>
             <UserRound size={18} />
@@ -122,5 +142,6 @@ export function StoreHeaderClient({ isSignedIn, isAdmin, accountHref }: StoreHea
         </div>
       </div>
     </header>
+    </>
   );
 }

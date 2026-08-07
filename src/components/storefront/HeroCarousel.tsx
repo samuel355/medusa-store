@@ -5,12 +5,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { type StoreProduct } from "@/lib/db/products";
+import { formatMoney } from "@/lib/utils/money";
 
 type HeroCarouselProps = {
   slides: StoreProduct[];
 };
 
-const SLIDE_MS = 5000;
+const SLIDE_MS = 6000;
 
 export function HeroCarousel({ slides }: HeroCarouselProps) {
   const [active, setActive] = useState(0);
@@ -26,11 +27,17 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
 
   if (slides.length === 0) return null;
 
+  const current = slides[active];
+
   return (
     <div
       className="ed-hero-carousel"
-      onMouseEnter={() => { paused.current = true; }}
-      onMouseLeave={() => { paused.current = false; }}
+      onMouseEnter={() => {
+        paused.current = true;
+      }}
+      onMouseLeave={() => {
+        paused.current = false;
+      }}
     >
       {slides.map((product, index) => (
         <Image
@@ -44,13 +51,12 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
         />
       ))}
       <div className="ed-hero-feature-scrim" />
-      <div className="ed-hero-feature-copy">
-        <p>New this week</p>
-        <h1>
-          Curated style for <span className="ed-hero-accent">everyday Ghana</span>
-        </h1>
-        <Link className="ed-text-link" href="/shop">
-          Shop the collection
+      <div className="ed-hero-feature-copy" key={current.slug}>
+        <p>{current.badge || current.category || "New this week"}</p>
+        <h1>{current.name}</h1>
+        <span className="ed-hero-feature-price">{formatMoney(current.price)}</span>
+        <Link className="ed-text-link ed-hero-cta" href={`/products/${current.slug}`}>
+          Shop now
           <ArrowRight size={16} />
         </Link>
       </div>

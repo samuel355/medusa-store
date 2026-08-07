@@ -82,7 +82,9 @@ export function ProductCatalog({ departments, products: catalogProducts }: Produ
       setQuery(storedQuery);
       window.localStorage.removeItem("begnon_search");
     }
-    fetchWishlist().then((items) => setSaved(items.map((item) => item.productId)));
+    fetchWishlist()
+      .then((items) => setSaved(items.map((item) => item.productId)))
+      .catch(() => undefined);
   }, [departments]);
 
   const facets = useMemo(() => {

@@ -1,4 +1,4 @@
-import { Heart, ShoppingBag } from "lucide-react";
+import { Heart, ShoppingBag, Star } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { type StoreProduct } from "@/lib/db/products";
@@ -17,6 +17,12 @@ function discountPercent(product: StoreProduct) {
   return Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100);
 }
 
+function formatRating(rating: string) {
+  const value = Number(rating);
+  if (!Number.isFinite(value) || value <= 0) return null;
+  return value.toFixed(1);
+}
+
 export function ProductCard({
   product,
   priority = false,
@@ -25,6 +31,7 @@ export function ProductCard({
   onQuickAdd,
 }: ProductCardProps) {
   const discount = discountPercent(product);
+  const rating = formatRating(product.rating);
 
   return (
     <article className="ed-product-card">
@@ -66,7 +73,15 @@ export function ProductCard({
       </div>
 
       <Link href={`/products/${product.slug}`} className="ed-product-card-body">
-        <em>{product.brand || product.category}</em>
+        <div className="ed-product-card-meta">
+          <em>{product.brand || product.category}</em>
+          {rating ? (
+            <span className="ed-product-rating" aria-label={`Rated ${rating} out of 5`}>
+              <Star size={11} fill="currentColor" aria-hidden="true" />
+              {rating}
+            </span>
+          ) : null}
+        </div>
         <strong>{product.name}</strong>
         <span className="ed-product-price">
           {formatMoney(product.price)}
