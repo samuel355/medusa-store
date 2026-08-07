@@ -9,6 +9,12 @@ function storeUrl() {
 
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
   const shopUrl = `${storeUrl()}/shop`;
+  const environment = process.env.NODE_ENV || "development";
+  const storeCorsOrigins = (process.env.STORE_CORS || "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  const deployedAt = new Date().toISOString();
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -132,6 +138,27 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     color: #a8a29e;
     font-size: 0.76rem;
   }
+  .diagnostics {
+    margin-top: 1.5rem;
+    padding: 0.9rem 1rem;
+    border-radius: 12px;
+    background: #fafaf9;
+    border: 1px solid #f0e5da;
+    text-align: left;
+    font-size: 0.76rem;
+    color: var(--muted);
+  }
+  .diagnostics dt {
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .diagnostics dd {
+    margin: 0 0 0.5rem;
+    word-break: break-all;
+  }
+  .diagnostics dd:last-child {
+    margin-bottom: 0;
+  }
 </style>
 </head>
 <body>
@@ -145,6 +172,14 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       <a class="btn secondary" href="${shopUrl}">Visit the Storefront →</a>
       <a class="btn ghost" href="/health">Check API health</a>
     </div>
+    <dl class="diagnostics">
+      <dt>Environment</dt>
+      <dd>${environment}</dd>
+      <dt>Store CORS allow-list</dt>
+      <dd>${storeCorsOrigins.length ? storeCorsOrigins.join(", ") : "(none set)"}</dd>
+      <dt>Server time</dt>
+      <dd>${deployedAt}</dd>
+    </dl>
     <footer>Begnon · Style · Quality · Delivered</footer>
   </main>
 </body>
