@@ -75,6 +75,17 @@ create table if not exists medusastore.customer_settings (
   updated_at timestamptz not null default now()
 );
 
+-- Backs the Arkesel-delivered phone OTP login/signup flow (Supabase's own
+-- phone provider only supports Twilio/MessageBird/Vonage/TextLocal, not
+-- Arkesel, so codes are generated, hashed, and verified here instead).
+create table if not exists medusastore.phone_otp_codes (
+  phone text primary key,
+  code_hash text not null,
+  expires_at timestamptz not null,
+  attempts integer not null default 0,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists medusastore.categories (
   id uuid primary key default gen_random_uuid(),
   parent_id uuid references medusastore.categories(id) on delete set null,

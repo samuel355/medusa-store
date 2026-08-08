@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { isValidEmail, isValidGhanaPhone } from "./validation";
+import { isValidEmail, isValidGhanaPhone, normalizeGhanaPhone } from "./validation";
 
 test("isValidEmail accepts well-formed addresses and rejects the rest", () => {
   assert.equal(isValidEmail("buyer@example.com"), true);
@@ -18,4 +18,10 @@ test("isValidGhanaPhone accepts 0XXXXXXXXX and +233XXXXXXXXX", () => {
   assert.equal(isValidGhanaPhone("024000000"), false);
   assert.equal(isValidGhanaPhone("+233"), false);
   assert.equal(isValidGhanaPhone(""), false);
+});
+
+test("normalizeGhanaPhone converts 0XXXXXXXXX to E.164 and leaves +233 alone", () => {
+  assert.equal(normalizeGhanaPhone("0240000000"), "+233240000000");
+  assert.equal(normalizeGhanaPhone("024 000 0000"), "+233240000000");
+  assert.equal(normalizeGhanaPhone("+233240000000"), "+233240000000");
 });
