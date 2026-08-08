@@ -4,13 +4,11 @@ import {
   Bell,
   CreditCard,
   Heart,
-  Home,
-  MapPin,
+  LogIn,
   PackageCheck,
   Phone,
   RotateCcw,
   Save,
-  Settings,
   Truck,
   UserRound,
 } from "lucide-react";
@@ -25,13 +23,40 @@ export type CustomerDashboardView = "overview" | "orders" | "wishlist" | "addres
 
 const ACTIVE_STATUSES = new Set(["pending", "confirmed", "processing", "packed", "out_for_delivery"]);
 
+const VIEW_META: Record<CustomerDashboardView, { kicker: string; title: string }> = {
+  overview: { kicker: "Customer account", title: "Customer dashboard" },
+  orders: { kicker: "Customer account", title: "Orders and tracking" },
+  wishlist: { kicker: "Customer account", title: "Wishlist" },
+  addresses: { kicker: "Customer account", title: "Addresses" },
+  returns: { kicker: "Customer account", title: "Returns and exchanges" },
+  preferences: { kicker: "Customer account", title: "Preferences" },
+};
+
+function AccountLoadingSkeleton() {
+  return (
+    <div className="account-loading-skeleton" aria-busy="true" aria-label="Loading account">
+      <div className="skeleton-card account-skeleton-banner" />
+      <div className="account-skeleton-row">
+        <div className="skeleton-card" />
+        <div className="skeleton-card" />
+        <div className="skeleton-card" />
+        <div className="skeleton-card" />
+      </div>
+      <div className="account-skeleton-row account-skeleton-row-panels">
+        <div className="skeleton-card" />
+        <div className="skeleton-card" />
+      </div>
+    </div>
+  );
+}
+
 export function CustomerAccountClient({ view = "overview" }: Readonly<{ view?: CustomerDashboardView }>) {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [profileDraft, setProfileDraft] = useState({ displayName: "", phone: "", email: "" });
   const [orders, setOrders] = useState<OrderSummary[]>([]);
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
   const [saved, setSaved] = useState(false);
-  const [message, setMessage] = useState("");
+  const [authState, setAuthState] = useState<"loading" | "signed-out" | "ready">("loading");
 
   useEffect(() => {
     function syncWishlist() {
@@ -48,8 +73,9 @@ export function CustomerAccountClient({ view = "overview" }: Readonly<{ view?: C
             phone: data.customer.phone,
             email: data.customer.email,
           });
+          setAuthState("ready");
         } else {
-          setMessage("Sign in to see your account details.");
+          setAuthState("signed-out");
         }
       });
     fetchOrders().then(setOrders);
@@ -83,34 +109,29 @@ export function CustomerAccountClient({ view = "overview" }: Readonly<{ view?: C
     }
   }
 
-  const navItems: { label: string; icon: typeof Home; href: string; view: CustomerDashboardView }[] = [
-    { label: "Overview", icon: Home, href: "/customers", view: "overview" },
-    { label: "Orders", icon: PackageCheck, href: "/customers/orders", view: "orders" },
-    { label: "Wishlist", icon: Heart, href: "/customers/wishlist", view: "wishlist" },
-    { label: "Addresses", icon: MapPin, href: "/customers/addresses", view: "addresses" },
-    { label: "Returns", icon: RotateCcw, href: "/customers/returns", view: "returns" },
-    { label: "Preferences", icon: Settings, href: "/customers/preferences", view: "preferences" },
-  ];
-
-  if (!customer) {
-    return <p className="inline-notice">{message || "Loading account..."}</p>;
-  }
+  const meta = VIEW_META[view];
 
   return (
-    <section className="account-dashboard-shell">
-      <aside className="account-sidebar" aria-label="Customer dashboard navigation">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          return (
-            <a className={view === item.view ? "active" : ""} href={item.href} key={item.label}>
-              <Icon size={17} />
-              {item.label}
-            </a>
-          );
-        })}
-      </aside>
+    <>
+      <div className="account-content-head">
+        <p className="kicker">{meta.kicker}</p>
+        <h1>{meta.title}</h1>
+      </div>
 
-      <div className="account-dashboard-main">
+      {authState === "loading" ? (
+        <AccountLoadingSkeleton />
+      ) : authState === "signed-out" ? (
+        <div className="account-empty-state account-signed-out">
+          <UserRound size={24} />
+          <strong>Sign in to see your account details.</strong>
+          <span>Orders, wishlist, addresses, and preferences all live here once you&apos;re signed in.</span>
+          <a className="primary-action" href={`/login?redirectTo=${encodeURIComponent("/customers")}`}>
+            <LogIn size={18} />
+            Sign in
+          </a>
+        </div>
+      ) : !customer ? null : (
+        <>
         {view === "overview" ? (
           <>
           <section id="overview" className="account-welcome-panel">
@@ -310,7 +331,8 @@ export function CustomerAccountClient({ view = "overview" }: Readonly<{ view?: C
             </article>
           </section>
         ) : null}
-      </div>
-    </section>
+        </>
+      )}
+    </>
   );
 }

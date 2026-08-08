@@ -1426,6 +1426,61 @@ select:focus {
   min-width: 0;
 }
 
+.account-content-head {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.account-content-head h1 {
+  margin: 0;
+  font-size: clamp(1.35rem, 2.4vw, 1.8rem);
+  letter-spacing: -0.01em;
+}
+
+.account-loading-skeleton {
+  display: grid;
+  gap: var(--section-gap);
+}
+
+.account-skeleton-banner {
+  min-height: 92px;
+}
+
+.account-skeleton-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--section-gap);
+}
+
+.account-skeleton-row .skeleton-card {
+  min-height: 76px;
+}
+
+.account-skeleton-row-panels {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.account-skeleton-row-panels .skeleton-card {
+  min-height: 210px;
+}
+
+.account-signed-out {
+  justify-items: center;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+}
+
+.account-signed-out .primary-action {
+  margin-top: 0.4rem;
+}
+
+@media (max-width: 640px) {
+  .account-skeleton-row,
+  .account-skeleton-row-panels {
+    grid-template-columns: 1fr;
+  }
+}
+
 .account-welcome-panel {
   display: flex;
   align-items: center;
