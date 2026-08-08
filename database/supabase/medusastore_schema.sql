@@ -33,6 +33,16 @@ create table if not exists medusastore.customers (
   updated_at timestamptz not null default now()
 );
 
+-- Lets one customer have multiple auth.users identities (email/password,
+-- Google, phone OTP) instead of customers.auth_user_id's single link, so
+-- the same person using a different login method links to one account
+-- rather than colliding with the email/phone unique constraints below.
+create table if not exists medusastore.customer_auth_identities (
+  auth_user_id uuid primary key references auth.users(id) on delete cascade,
+  customer_id uuid not null references medusastore.customers(id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
 create or replace function medusastore.current_customer_id()
 returns uuid
 language sql
@@ -834,31 +844,17 @@ from medusastore.orders o
 left join medusastore.order_items oi on oi.order_id = o.id
 group by o.id;
 
--- Optional helper for creating customer rows after Supabase Auth signup.
-create or replace function medusastore.create_customer_for_auth_user()
-returns trigger
-language plpgsql
-security definer
-set search_path = medusastore, public
-as $$
-begin
-  insert into medusastore.customers (auth_user_id, email, phone, display_name)
-  values (
-    new.id,
-    new.email,
-    new.phone,
-    coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', new.email, new.phone)
-  )
-  on conflict (auth_user_id) do nothing;
-
-  return new;
-end;
-$$;
-
-drop trigger if exists create_medusastore_customer_after_auth_signup on auth.users;
-create trigger create_medusastore_customer_after_auth_signup
-after insert on auth.users
-for each row execute function medusastore.create_customer_for_auth_user();
+-- Customer rows are created/linked by application code
+-- (ensureCustomerForAuthUser in src/lib/db/customers.ts) after every
+-- successful sign-in, not by a trigger here. A trigger firing directly on
+-- auth.users insert can't apply the verified-email/phone matching that
+-- links a second login method (e.g. phone OTP) to an existing account
+-- instead of creating a duplicate - it always races ahead of that logic
+-- with a naive insert. A prior version of this schema had exactly that
+-- trigger (create_medusastore_customer_after_auth_signup); drop it if
+-- restoring this file onto a database that still has it:
+--   drop trigger if exists create_medusastore_customer_after_auth_signup on auth.users;
+--   drop function if exists medusastore.create_customer_for_auth_user();
 
 -- Homepage hero merchandising banners.
 create table if not exists medusastore.hero_banners (

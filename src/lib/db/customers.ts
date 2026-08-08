@@ -47,12 +47,38 @@ function mapCustomer(row: CustomerRow): Customer {
 export async function getCustomerByAuthUserId(authUserId: string): Promise<Customer | null> {
   const sql = getSql();
   const rows = await sql<CustomerRow[]>`
-    select * from medusastore.customers where auth_user_id = ${authUserId}
+    select c.* from medusastore.customers c
+    join medusastore.customer_auth_identities i on i.customer_id = c.id
+    where i.auth_user_id = ${authUserId}
   `;
 
   return rows[0] ? mapCustomer(rows[0]) : null;
 }
 
+// Only identifiers Supabase has itself confirmed for this specific auth
+// user are trusted for account matching - an unverified email/phone claim
+// must never be able to attach to someone else's existing customer record.
+async function getVerifiedIdentifiers(sql: ReturnType<typeof getSql>, authUserId: string) {
+  const [row] = await sql<{
+    email: string | null;
+    email_confirmed_at: Date | null;
+    phone: string | null;
+    phone_confirmed_at: Date | null;
+  }[]>`
+    select email, email_confirmed_at, phone, phone_confirmed_at from auth.users where id = ${authUserId}
+  `;
+
+  return {
+    verifiedEmail: row?.email_confirmed_at ? row.email : null,
+    verifiedPhone: row?.phone_confirmed_at ? row.phone : null,
+  };
+}
+
+// A person may sign in via email/password, Google, and phone OTP - each
+// creates a separate auth.users row, so this links a new one to whichever
+// existing customer already owns that (verified) email or phone instead of
+// creating a duplicate, which would otherwise hit the unique constraints on
+// customers.email/phone with a raw, unhandled conflict.
 export async function ensureCustomerForAuthUser(input: {
   authUserId: string;
   email?: string | null;
@@ -60,16 +86,48 @@ export async function ensureCustomerForAuthUser(input: {
   displayName?: string | null;
 }): Promise<Customer> {
   const sql = getSql();
-  const rows = await sql<CustomerRow[]>`
+
+  const existing = await getCustomerByAuthUserId(input.authUserId);
+  if (existing) return existing;
+
+  const { verifiedEmail, verifiedPhone } = await getVerifiedIdentifiers(sql, input.authUserId);
+
+  if (verifiedEmail || verifiedPhone) {
+    const [match] = await sql<CustomerRow[]>`
+      select * from medusastore.customers
+      where (${verifiedEmail}::text is not null and email = ${verifiedEmail})
+         or (${verifiedPhone}::text is not null and phone = ${verifiedPhone})
+      limit 1
+    `;
+
+    if (match) {
+      await sql`
+        insert into medusastore.customer_auth_identities (auth_user_id, customer_id)
+        values (${input.authUserId}, ${match.id})
+        on conflict (auth_user_id) do nothing
+      `;
+      const [updated] = await sql<CustomerRow[]>`
+        update medusastore.customers set
+          email = coalesce(email, ${verifiedEmail}),
+          phone = coalesce(phone, ${verifiedPhone})
+        where id = ${match.id}
+        returning *
+      `;
+      return mapCustomer(updated);
+    }
+  }
+
+  const [created] = await sql<CustomerRow[]>`
     insert into medusastore.customers (auth_user_id, email, phone, display_name)
     values (${input.authUserId}, ${input.email ?? null}, ${input.phone ?? null}, ${input.displayName ?? input.email ?? input.phone ?? null})
-    on conflict (auth_user_id) do update set
-      email = coalesce(excluded.email, medusastore.customers.email),
-      phone = coalesce(excluded.phone, medusastore.customers.phone)
     returning *
   `;
+  await sql`
+    insert into medusastore.customer_auth_identities (auth_user_id, customer_id)
+    values (${input.authUserId}, ${created.id})
+  `;
 
-  return mapCustomer(rows[0]);
+  return mapCustomer(created);
 }
 
 export async function updateCustomerProfile(
