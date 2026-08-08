@@ -89,7 +89,10 @@ export function CartPageClient() {
                     <Plus size={14} />
                   </button>
                 </div>
-                <span className="ed-bag-price">{formatMoney(item.lineTotal)}</span>
+                <div className="ed-bag-price-group">
+                  {item.quantity > 1 ? <span className="ed-bag-unit-price">{formatMoney(item.price)} each</span> : null}
+                  <span className="ed-bag-price">{formatMoney(item.lineTotal)}</span>
+                </div>
               </div>
             </div>
           </article>

@@ -3995,6 +3995,18 @@ strong,
   margin-top: 0.8rem;
 }
 
+.ed-bag-price-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+}
+
+.ed-bag-unit-price {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
 .ed-bag-price {
   font-size: 0.94rem;
   font-weight: 600;
