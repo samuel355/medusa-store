@@ -1,6 +1,6 @@
 "use client";
 
-import { Heart, Home, MapPin, PackageCheck, RotateCcw, Settings } from "lucide-react";
+import { Heart, Home, LogOut, MapPin, PackageCheck, RotateCcw, Settings } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
@@ -32,6 +32,12 @@ export function CustomerDashboardShell({ children }: Readonly<{ children: React.
             </a>
           );
         })}
+        <form action="/api/auth/logout" method="post" className="account-sidebar-logout-form">
+          <button type="submit" className="account-sidebar-logout">
+            <LogOut size={17} />
+            Log out
+          </button>
+        </form>
       </aside>
       <div className="account-dashboard-main">{children}</div>
     </section>

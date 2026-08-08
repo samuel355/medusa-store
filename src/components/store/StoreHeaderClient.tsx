@@ -1,9 +1,9 @@
 "use client";
 
-import { Grid3X3, Heart, ListFilter, Search, ShoppingBag, UserRound, X } from "lucide-react";
+import { Grid3X3, Heart, LayoutDashboard, ListFilter, LogOut, PackageCheck, Search, ShoppingBag, UserRound, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { storeBrand } from "@/lib/store/brand";
 import { BrandMark } from "@/components/store/BrandMark";
 import { useCart } from "@/lib/medusa/cart";
@@ -12,15 +12,36 @@ type StoreHeaderClientProps = {
   isSignedIn: boolean;
   isAdmin: boolean;
   accountHref: string;
+  displayName?: string | null;
 };
 
-export function StoreHeaderClient({ isSignedIn, isAdmin, accountHref }: StoreHeaderClientProps) {
+export function StoreHeaderClient({ isSignedIn, isAdmin, accountHref, displayName }: StoreHeaderClientProps) {
   const router = useRouter();
   const { cart } = useCart();
   const cartCount = cart.items.length;
   const [query, setQuery] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpenMobile, setIsSearchOpenMobile] = useState(false);
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isAccountMenuOpen) return;
+    function handlePointerDown(event: MouseEvent) {
+      if (accountMenuRef.current && !accountMenuRef.current.contains(event.target as Node)) {
+        setIsAccountMenuOpen(false);
+      }
+    }
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setIsAccountMenuOpen(false);
+    }
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isAccountMenuOpen]);
 
   function search(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -80,9 +101,47 @@ export function StoreHeaderClient({ isSignedIn, isAdmin, accountHref }: StoreHea
           {isSearchOpenMobile ? <X size={16} /> : <Search size={16} />}
         </button>
         <div className="nav-actions">
-          <Link href={accountHref} aria-label={isAdmin ? "Dashboard" : "Account"} title={isAdmin ? "Dashboard" : "Account"}>
-            <UserRound size={18} />
-          </Link>
+          {isSignedIn ? (
+            <div className="account-menu" ref={accountMenuRef}>
+              <button
+                className="account-menu-trigger"
+                aria-haspopup="true"
+                aria-expanded={isAccountMenuOpen}
+                aria-label={isAdmin ? "Dashboard menu" : "Account menu"}
+                title={isAdmin ? "Dashboard" : "Account"}
+                onClick={() => setIsAccountMenuOpen((current) => !current)}
+              >
+                <UserRound size={18} />
+              </button>
+              {isAccountMenuOpen ? (
+                <div className="account-menu-dropdown" role="menu">
+                  <p className="account-menu-greeting">
+                    {isAdmin ? "Signed in as admin" : `Hi, ${displayName?.trim().split(" ")[0] || "there"}`}
+                  </p>
+                  <Link href={accountHref} role="menuitem" onClick={() => setIsAccountMenuOpen(false)}>
+                    <LayoutDashboard size={15} />
+                    {isAdmin ? "Admin dashboard" : "View account"}
+                  </Link>
+                  {!isAdmin ? (
+                    <Link href="/customers/orders" role="menuitem" onClick={() => setIsAccountMenuOpen(false)}>
+                      <PackageCheck size={15} />
+                      Orders
+                    </Link>
+                  ) : null}
+                  <form action="/api/auth/logout" method="post" className="account-menu-logout-form">
+                    <button type="submit" role="menuitem" className="account-menu-logout">
+                      <LogOut size={15} />
+                      Log out
+                    </button>
+                  </form>
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <Link href={accountHref} aria-label="Account" title="Account">
+              <UserRound size={18} />
+            </Link>
+          )}
           <Link href="/customers/wishlist" aria-label="Wishlist" title="Wishlist">
             <Heart size={18} />
           </Link>

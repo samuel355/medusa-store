@@ -1,18 +1,28 @@
 import { getAuthUser, isAdminAuthUser } from "@/lib/auth/session";
+import { getCustomerByAuthUserId } from "@/lib/db/customers";
 import { StoreHeaderClient } from "@/components/store/StoreHeaderClient";
 
 export async function StoreHeader() {
   let isSignedIn = false;
   let isAdmin = false;
+  let displayName: string | null = null;
 
   if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
     const user = await getAuthUser();
 
     isSignedIn = Boolean(user);
-    isAdmin = user ? await isAdminAuthUser(user.id) : false;
+    if (user) {
+      isAdmin = await isAdminAuthUser(user.id);
+      if (!isAdmin) {
+        const customer = await getCustomerByAuthUserId(user.id);
+        displayName = customer?.displayName ?? null;
+      }
+    }
   }
 
   const accountHref = isSignedIn ? (isAdmin ? "/admin" : "/customers") : "/login";
 
-  return <StoreHeaderClient isSignedIn={isSignedIn} isAdmin={isAdmin} accountHref={accountHref} />;
+  return (
+    <StoreHeaderClient isSignedIn={isSignedIn} isAdmin={isAdmin} accountHref={accountHref} displayName={displayName} />
+  );
 }

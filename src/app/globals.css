@@ -1420,6 +1420,30 @@ select:focus {
   color: #f4752c;
 }
 
+.account-sidebar-logout-form {
+  margin-top: 0.35rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid #f0e2d7;
+}
+
+.account-sidebar-logout {
+  display: inline-flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 40px;
+  border: 0;
+  border-radius: 10px;
+  padding: 0 0.7rem;
+  background: none;
+  color: #b42318;
+  font-weight: 850;
+}
+
+.account-sidebar-logout:hover {
+  background: #fef3f2;
+}
+
 .account-dashboard-main {
   display: grid;
   gap: var(--section-gap);
@@ -2578,6 +2602,99 @@ strong,
   display: flex;
   align-items: center;
   gap: 0.4rem;
+}
+
+.account-menu {
+  position: relative;
+}
+
+.account-menu-trigger {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  background: none;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.account-menu-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 40;
+  display: grid;
+  width: 220px;
+  padding: 0.5rem;
+  border: 1px solid rgba(23, 19, 15, 0.1);
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 16px 40px rgba(23, 19, 15, 0.14);
+  animation: accountMenuIn 140ms ease;
+}
+
+@keyframes accountMenuIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.account-menu-greeting {
+  margin: 0.2rem 0.6rem 0.5rem;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.account-menu-dropdown a {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 40px;
+  border-radius: 8px;
+  padding: 0 0.6rem;
+  color: var(--text);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.account-menu-dropdown a:hover {
+  background: #fff7ed;
+  color: var(--hot);
+}
+
+.account-menu-logout-form {
+  margin: 0.3rem 0 0;
+  padding-top: 0.3rem;
+  border-top: 1px solid rgba(23, 19, 15, 0.08);
+}
+
+.account-menu-logout {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 40px;
+  border: 0;
+  border-radius: 8px;
+  padding: 0 0.6rem;
+  background: none;
+  color: #b42318;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.account-menu-logout:hover {
+  background: #fef3f2;
 }
 
 .topbar .navlinks {
