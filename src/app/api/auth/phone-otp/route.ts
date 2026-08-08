@@ -24,11 +24,11 @@ export async function POST(request: Request) {
 
     try {
       const user = await signInWithVerifiedPhone(phone);
-      const customer = await ensureCustomerForAuthUser({ authUserId: user.id, phone: user.phone });
+      const customer = await ensureCustomerForAuthUser({ authUserId: user.id, phone, trustedPhone: phone });
       const admin = await isAdminAuthUser(user.id);
 
       return NextResponse.json({
-        user: { id: user.id, phone: user.phone },
+        user: { id: user.id, phone },
         customer,
         redirectTo: admin ? "/admin" : "/customers",
       });

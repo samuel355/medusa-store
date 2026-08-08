@@ -56,21 +56,21 @@ export async function getCustomerByAuthUserId(authUserId: string): Promise<Custo
 }
 
 // Only identifiers Supabase has itself confirmed for this specific auth
-// user are trusted for account matching - an unverified email/phone claim
-// must never be able to attach to someone else's existing customer record.
-async function getVerifiedIdentifiers(sql: ReturnType<typeof getSql>, authUserId: string) {
-  const [row] = await sql<{
-    email: string | null;
-    email_confirmed_at: Date | null;
-    phone: string | null;
-    phone_confirmed_at: Date | null;
-  }[]>`
-    select email, email_confirmed_at, phone, phone_confirmed_at from auth.users where id = ${authUserId}
+// user are trusted for account matching - an unverified email claim must
+// never be able to attach to someone else's existing customer record.
+// Phone auth users sign in through a synthetic-email Supabase identity
+// (see phoneSession.ts, avoids depending on Supabase's phone provider
+// being enabled) so auth.users has no real phone for them to read here -
+// callers that already verified a phone out-of-band (our own Arkesel OTP)
+// pass it as trustedPhone instead.
+async function getVerifiedIdentifiers(sql: ReturnType<typeof getSql>, authUserId: string, trustedPhone?: string | null) {
+  const [row] = await sql<{ email: string | null; email_confirmed_at: Date | null }[]>`
+    select email, email_confirmed_at from auth.users where id = ${authUserId}
   `;
 
   return {
     verifiedEmail: row?.email_confirmed_at ? row.email : null,
-    verifiedPhone: row?.phone_confirmed_at ? row.phone : null,
+    verifiedPhone: trustedPhone ?? null,
   };
 }
 
@@ -84,13 +84,14 @@ export async function ensureCustomerForAuthUser(input: {
   email?: string | null;
   phone?: string | null;
   displayName?: string | null;
+  trustedPhone?: string | null;
 }): Promise<Customer> {
   const sql = getSql();
 
   const existing = await getCustomerByAuthUserId(input.authUserId);
   if (existing) return existing;
 
-  const { verifiedEmail, verifiedPhone } = await getVerifiedIdentifiers(sql, input.authUserId);
+  const { verifiedEmail, verifiedPhone } = await getVerifiedIdentifiers(sql, input.authUserId, input.trustedPhone);
 
   if (verifiedEmail || verifiedPhone) {
     const [match] = await sql<CustomerRow[]>`
