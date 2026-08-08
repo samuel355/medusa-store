@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, CheckCircle2, Mail, Smartphone, UserRound } from "lucide-react";
+import { ArrowRight, CheckCircle2, Eye, EyeOff, Mail, Smartphone, UserRound } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 
@@ -15,6 +15,7 @@ export function AuthPanel({ initialMode = "login" }: AuthPanelProps) {
   const [mode, setMode] = useState<"login" | "signup">(initialMode);
   const [value, setValue] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [message, setMessage] = useState("");
@@ -145,12 +146,22 @@ export function AuthPanel({ initialMode = "login" }: AuthPanelProps) {
           <>
             <label className="ed-buybox-field">
               <span>Password</span>
-              <input
-                type="password"
-                placeholder="At least 8 characters"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-              />
+              <div className="ed-password-field">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="At least 8 characters"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                />
+                <button
+                  type="button"
+                  className="ed-password-toggle"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  onClick={() => setShowPassword((current) => !current)}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </label>
           </>
         ) : null}

@@ -3797,6 +3797,33 @@ strong,
   resize: vertical;
 }
 
+.ed-password-field {
+  position: relative;
+  display: flex;
+}
+
+.ed-password-field input {
+  flex: 1;
+  padding-right: 2.4rem;
+}
+
+.ed-password-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  border: 0;
+  background: none;
+  color: var(--muted);
+}
+
+.ed-password-toggle:hover {
+  color: var(--hot);
+}
+
 .ed-qty-stepper {
   display: inline-flex;
   align-items: center;
