@@ -18,7 +18,10 @@ export async function POST(request: Request) {
   const { data, error } = await authCall;
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json(
+      { error: error.message, emailNotConfirmed: error.code === "email_not_confirmed" },
+      { status: 400 },
+    );
   }
 
   if (!data.user) {

@@ -20,10 +20,13 @@ export function AuthPanel({ initialMode = "login" }: AuthPanelProps) {
   const [otpSent, setOtpSent] = useState(false);
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [emailNotConfirmed, setEmailNotConfirmed] = useState(false);
+  const [isResending, setIsResending] = useState(false);
 
   async function submit() {
     setIsSubmitting(true);
     setMessage("");
+    setEmailNotConfirmed(false);
 
     try {
       const endpoint = method === "Phone" ? "/api/auth/phone-otp" : method === "Email" ? "/api/auth/email-password" : "/api/auth/google";
@@ -46,11 +49,13 @@ export function AuthPanel({ initialMode = "login" }: AuthPanelProps) {
         sent?: boolean;
         redirectTo?: string;
         pendingConfirmation?: boolean;
+        emailNotConfirmed?: boolean;
         message?: string;
       };
 
       if (!response.ok) {
         setMessage(data.error ?? "Unable to start sign-in.");
+        setEmailNotConfirmed(Boolean(data.emailNotConfirmed));
         return;
       }
 
@@ -87,11 +92,41 @@ export function AuthPanel({ initialMode = "login" }: AuthPanelProps) {
     }
   }
 
+  async function resendConfirmation() {
+    setIsResending(true);
+    try {
+      const response = await fetch("/api/auth/resend-confirmation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: value }),
+      });
+      const data = (await response.json()) as { error?: string; sent?: boolean };
+
+      setMessage(
+        response.ok && data.sent
+          ? "Verification email resent — check your inbox."
+          : data.error ?? "Unable to resend the verification email."
+      );
+    } catch {
+      setMessage("Auth service is not reachable in this environment.");
+    } finally {
+      setIsResending(false);
+    }
+  }
+
   return (
     <div className="ed-auth-wrap">
       <div className="ed-checkout-tabs ed-auth-mode-tabs" role="tablist" aria-label="Login or sign up">
         {(["login", "signup"] as const).map((item) => (
-          <button className={mode === item ? "is-active" : ""} key={item} onClick={() => setMode(item)}>
+          <button
+            className={mode === item ? "is-active" : ""}
+            key={item}
+            onClick={() => {
+              setMode(item);
+              setMessage("");
+              setEmailNotConfirmed(false);
+            }}
+          >
             {item === "login" ? "Login" : "Sign up"}
           </button>
         ))}
@@ -101,10 +136,23 @@ export function AuthPanel({ initialMode = "login" }: AuthPanelProps) {
       <h1>{mode === "signup" ? "Create your account." : "Welcome back."}</h1>
       <p className="ed-checkout-sub">Save orders, addresses, wishlist items, returns, and delivery updates.</p>
       {message ? <p className="ed-notice">{message}</p> : null}
+      {emailNotConfirmed ? (
+        <button className="ed-text-link" type="button" disabled={isResending} onClick={resendConfirmation}>
+          {isResending ? "Resending..." : "Resend verification email"}
+        </button>
+      ) : null}
 
       <div className="ed-checkout-tabs" role="tablist" aria-label="Login methods">
         {["Phone", "Email", "Google"].map((item) => (
-          <button className={method === item ? "is-active" : ""} key={item} onClick={() => setMethod(item)}>
+          <button
+            className={method === item ? "is-active" : ""}
+            key={item}
+            onClick={() => {
+              setMethod(item);
+              setMessage("");
+              setEmailNotConfirmed(false);
+            }}
+          >
             {item === "Phone" ? <Smartphone size={15} /> : item === "Email" ? <Mail size={15} /> : <UserRound size={15} />}
             {item}
           </button>
