@@ -2,7 +2,9 @@
 
 import { ArrowRight, CheckCircle2, Eye, EyeOff, Mail, Smartphone, UserRound } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+const OTP_RESEND_COOLDOWN_SECONDS = 60;
 
 type AuthPanelProps = {
   initialMode?: "login" | "signup";
@@ -22,6 +24,16 @@ export function AuthPanel({ initialMode = "login" }: AuthPanelProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [emailNotConfirmed, setEmailNotConfirmed] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const [otpCooldownUntil, setOtpCooldownUntil] = useState<number | null>(null);
+  const [otpSecondsLeft, setOtpSecondsLeft] = useState(0);
+
+  useEffect(() => {
+    if (!otpCooldownUntil) return;
+    const tick = () => setOtpSecondsLeft(Math.max(0, Math.ceil((otpCooldownUntil - Date.now()) / 1000)));
+    tick();
+    const interval = window.setInterval(tick, 1000);
+    return () => window.clearInterval(interval);
+  }, [otpCooldownUntil]);
 
   async function submit() {
     setIsSubmitting(true);
@@ -66,6 +78,7 @@ export function AuthPanel({ initialMode = "login" }: AuthPanelProps) {
 
       if (data.sent) {
         setOtpSent(true);
+        setOtpCooldownUntil(Date.now() + OTP_RESEND_COOLDOWN_SECONDS * 1000);
         setMessage("Code sent. Enter the OTP to finish login.");
         return;
       }
@@ -89,6 +102,31 @@ export function AuthPanel({ initialMode = "login" }: AuthPanelProps) {
       setMessage("Auth service is not reachable in this environment.");
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function resendOtp() {
+    if (otpSecondsLeft > 0) return;
+    setIsResending(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/auth/phone-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: value, step: "send" }),
+      });
+      const data = (await response.json()) as { error?: string; sent?: boolean };
+
+      if (response.ok && data.sent) {
+        setOtpCooldownUntil(Date.now() + OTP_RESEND_COOLDOWN_SECONDS * 1000);
+        setMessage("New code sent.");
+      } else {
+        setMessage(data.error ?? "Unable to resend the code.");
+      }
+    } catch {
+      setMessage("Auth service is not reachable in this environment.");
+    } finally {
+      setIsResending(false);
     }
   }
 
@@ -180,15 +218,25 @@ export function AuthPanel({ initialMode = "login" }: AuthPanelProps) {
           </div>
         )}
         {method === "Phone" && otpSent ? (
-          <label className="ed-buybox-field">
-            <span>Verification code</span>
-            <input
-              inputMode="numeric"
-              placeholder="6-digit code"
-              value={otp}
-              onChange={(event) => setOtp(event.target.value)}
-            />
-          </label>
+          <>
+            <label className="ed-buybox-field">
+              <span>Verification code</span>
+              <input
+                inputMode="numeric"
+                placeholder="6-digit code"
+                value={otp}
+                onChange={(event) => setOtp(event.target.value)}
+              />
+            </label>
+            <button
+              className="ed-text-link"
+              type="button"
+              disabled={otpSecondsLeft > 0 || isResending}
+              onClick={resendOtp}
+            >
+              {isResending ? "Resending..." : otpSecondsLeft > 0 ? `Resend code in ${otpSecondsLeft}s` : "Resend code"}
+            </button>
+          </>
         ) : null}
         {method === "Email" ? (
           <>
