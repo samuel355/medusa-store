@@ -15,6 +15,8 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     .map((origin) => origin.trim())
     .filter(Boolean);
   const deployedAt = new Date().toISOString();
+  const emailNotificationsConfigured = Boolean(process.env.RESEND_API_KEY);
+  const smsNotificationsConfigured = Boolean(process.env.ARKESEL_API_KEY);
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -177,6 +179,10 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       <dd>${environment}</dd>
       <dt>Store CORS allow-list</dt>
       <dd>${storeCorsOrigins.length ? storeCorsOrigins.join(", ") : "(none set)"}</dd>
+      <dt>Order email notifications</dt>
+      <dd>${emailNotificationsConfigured ? "Configured (Resend)" : "Not configured — set RESEND_API_KEY"}</dd>
+      <dt>Order SMS notifications</dt>
+      <dd>${smsNotificationsConfigured ? "Configured (Arkesel)" : "Not configured — set ARKESEL_API_KEY"}</dd>
       <dt>Server time</dt>
       <dd>${deployedAt}</dd>
     </dl>

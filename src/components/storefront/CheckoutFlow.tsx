@@ -1,13 +1,15 @@
 "use client";
 
-import { CheckCircle2, CreditCard, Loader2, LogIn, ShieldCheck, Smartphone, UserRound } from "lucide-react";
+import { CheckCircle2, CreditCard, LogIn, ShieldCheck, Smartphone, UserRound } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { type CartResponse } from "@/lib/utils/cart";
 import { medusaSdk } from "@/lib/medusa/sdk";
 import { createCheckoutService, finalizeVerifiedCheckout } from "@/lib/medusa/checkout";
 import { useCart } from "@/lib/medusa/cart/CartProvider";
 import { formatMoney } from "@/lib/utils/money";
+import { isValidEmail, isValidGhanaPhone } from "@/lib/utils/validation";
+import { PaymentStatusModal } from "@/components/storefront/PaymentStatusModal";
 import type { GhanaMobileMoneyProvider } from "@/lib/integrations/paystack";
 
 type CheckoutFlowProps = {
@@ -34,22 +36,44 @@ type ChargeState =
 export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false }: CheckoutFlowProps) {
   const [guestChosen, setGuestChosen] = useState(false);
   const [email, setEmail] = useState(customer?.email ?? "");
-  const [phone, setPhone] = useState(customer?.phone ?? "+233 ");
+  const [phone, setPhone] = useState(customer?.phone ?? "");
   const [address, setAddress] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"mobile_money" | "card">("mobile_money");
   const [momoProvider, setMomoProvider] = useState<GhanaMobileMoneyProvider>("mtn");
   const [momoPhone, setMomoPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [charge, setCharge] = useState<ChargeState>({ status: "idle" });
+  const [touched, setTouched] = useState<Record<"email" | "phone" | "address" | "momoPhone", boolean>>({
+    email: false,
+    phone: false,
+    address: false,
+    momoPhone: false,
+  });
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const completingRef = useRef(false);
   const { resetAfterCheckout } = useCart();
+
+  const emailValid = useMemo(() => isValidEmail(email), [email]);
+  const phoneValid = useMemo(() => isValidGhanaPhone(phone), [phone]);
+  const momoPhoneValid = useMemo(() => isValidGhanaPhone(momoPhone), [momoPhone]);
+  const addressValid = address.trim().length > 4;
+
+  function markTouched(field: keyof typeof touched) {
+    setTouched((current) => ({ ...current, [field]: true }));
+  }
 
   useEffect(() => {
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
   }, []);
+
+  // Warm the Paystack popup bundle as soon as the payment step is reachable, so
+  // clicking Pay resumes an already-loaded module instead of fetching it cold.
+  useEffect(() => {
+    if (!medusa) return;
+    import("@paystack/inline-js").catch(() => {});
+  }, [medusa]);
 
   useEffect(() => {
     if (!medusa || !cart.id || typeof window === "undefined") return;
@@ -85,7 +109,7 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false }: Che
   }
 
   const showForm = isSignedIn || guestChosen;
-  const canSubmit = Boolean(email.trim()) && Boolean(address.trim());
+  const canSubmit = emailValid && phoneValid && addressValid;
 
   async function confirmAndCompleteMedusa(cartId: string) {
     if (completingRef.current) return;
@@ -99,7 +123,10 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false }: Che
         complete: checkout.complete,
         resetAfterCheckout,
         clearPending: () => window.localStorage.removeItem("begnon_pending_checkout_cart"),
-        redirect: (orderId) => { window.location.href = `/confirmations?order=${encodeURIComponent(orderId)}`; },
+        redirect: (orderId) => {
+          setCharge({ status: "success", orderNumber: orderId });
+          setTimeout(() => { window.location.href = `/confirmations?order=${encodeURIComponent(orderId)}`; }, 700);
+        },
       });
     } finally {
       completingRef.current = false;
@@ -115,6 +142,9 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false }: Che
     window.localStorage.setItem("begnon_pending_checkout_cart", cart.id);
     if (payment.accessCode) {
       const { default: PaystackPop } = await import("@paystack/inline-js");
+      // Hand off to Paystack's own popup UI - drop our modal so it doesn't render
+      // underneath/behind theirs while the customer is entering payment details.
+      setCharge({ status: "idle" });
       new PaystackPop().resumeTransaction(payment.accessCode, { onSuccess: () => { confirmAndCompleteMedusa(cart.id!).catch((cause) => setCharge({ status: "error", message: cause instanceof Error ? cause.message : "Payment confirmation is pending." })); }, onCancel: () => setCharge({ status: "error", message: "Payment was cancelled." }) });
       return;
     }
@@ -124,8 +154,8 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false }: Che
   }
 
   async function payWithMobileMoney() {
-    if (!canSubmit || !momoPhone.trim()) {
-      setCharge({ status: "error", message: "Add your email, delivery address, and Mobile Money number." });
+    if (!canSubmit || !momoPhoneValid) {
+      setTouched({ email: true, phone: true, address: true, momoPhone: true });
       return;
     }
 
@@ -227,7 +257,7 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false }: Che
 
   async function payWithCard() {
     if (!canSubmit) {
-      setCharge({ status: "error", message: "Add your email and delivery address first." });
+      setTouched({ email: true, phone: true, address: true, momoPhone: touched.momoPhone });
       return;
     }
 
@@ -289,7 +319,15 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false }: Che
   }
 
   return (
-    <section className="ed-checkout">
+    <>
+      {charge.status === "submitting" || charge.status === "awaiting_approval" ? (
+        <PaymentStatusModal status="confirming" message={charge.status === "awaiting_approval" ? charge.message : "Starting your payment..."} />
+      ) : charge.status === "success" ? (
+        <PaymentStatusModal status="success" message="Redirecting you to your order confirmation..." />
+      ) : charge.status === "error" ? (
+        <PaymentStatusModal status="error" message={charge.message} onDismiss={() => setCharge({ status: "idle" })} />
+      ) : null}
+      <section className="ed-checkout">
       <div className="ed-checkout-main">
         {!showForm ? (
           <div className="ed-checkout-panel">
@@ -326,15 +364,34 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false }: Che
               <div className="ed-checkout-form">
                 <label className="ed-buybox-field">
                   <span>Email</span>
-                  <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" placeholder="you@example.com" />
+                  <input
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    onBlur={() => markTouched("email")}
+                    type="email"
+                    placeholder="you@example.com"
+                  />
+                  {touched.email && !emailValid ? <p className="ed-field-error">Enter a valid email address.</p> : null}
                 </label>
                 <label className="ed-buybox-field">
                   <span>Phone</span>
-                  <input value={phone} onChange={(event) => setPhone(event.target.value)} />
+                  <input
+                    value={phone}
+                    onChange={(event) => setPhone(event.target.value)}
+                    onBlur={() => markTouched("phone")}
+                    placeholder="024 000 0000 or +233 24 000 0000"
+                  />
+                  {touched.phone && !phoneValid ? <p className="ed-field-error">Enter a valid Ghana phone number.</p> : null}
                 </label>
                 <label className="ed-buybox-field">
                   <span>Delivery address</span>
-                  <textarea value={address} onChange={(event) => setAddress(event.target.value)} placeholder="Street, area, city" />
+                  <textarea
+                    value={address}
+                    onChange={(event) => setAddress(event.target.value)}
+                    onBlur={() => markTouched("address")}
+                    placeholder="Street, area, city"
+                  />
+                  {touched.address && !addressValid ? <p className="ed-field-error">Add a delivery address.</p> : null}
                 </label>
               </div>
             </div>
@@ -370,7 +427,13 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false }: Che
                   </label>
                   <label className="ed-buybox-field">
                     <span>Mobile Money number</span>
-                    <input value={momoPhone} onChange={(event) => setMomoPhone(event.target.value)} placeholder="024 000 0000" />
+                    <input
+                      value={momoPhone}
+                      onChange={(event) => setMomoPhone(event.target.value)}
+                      onBlur={() => markTouched("momoPhone")}
+                      placeholder="024 000 0000"
+                    />
+                    {touched.momoPhone && !momoPhoneValid ? <p className="ed-field-error">Enter a valid Mobile Money number.</p> : null}
                   </label>
 
                   {charge.status === "awaiting_otp" ? (
@@ -385,32 +448,30 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false }: Che
                         Confirm code
                       </button>
                     </>
-                  ) : charge.status === "awaiting_approval" ? (
-                    <p className="ed-buybox-notice">
-                      <Loader2 size={15} className="spin" /> {charge.message}
-                    </p>
                   ) : (
                     <button
                       className="ed-btn-solid"
-                      disabled={charge.status === "submitting" || !canSubmit || !momoPhone.trim()}
+                      disabled={charge.status === "submitting" || charge.status === "awaiting_approval"}
                       onClick={payWithMobileMoney}
                     >
                       <Smartphone size={16} />
-                      {charge.status === "submitting" ? "Starting..." : `Pay ${formatMoney(cart.totals.total)}`}
+                      Pay {formatMoney(cart.totals.total)}
                     </button>
                   )}
                 </div>
               ) : (
                 <div className="ed-checkout-form">
                   <p className="ed-checkout-sub">Card details are entered securely in Paystack&apos;s payment window — we never see or store your card number.</p>
-                  <button className="ed-btn-solid" disabled={charge.status === "submitting" || !canSubmit} onClick={payWithCard}>
+                  <button
+                    className="ed-btn-solid"
+                    disabled={charge.status === "submitting" || charge.status === "awaiting_approval"}
+                    onClick={payWithCard}
+                  >
                     <CreditCard size={16} />
-                    {charge.status === "submitting" ? "Starting..." : `Pay ${formatMoney(cart.totals.total)}`}
+                    Pay {formatMoney(cart.totals.total)}
                   </button>
                 </div>
               )}
-
-              {charge.status === "error" ? <p className="ed-buybox-notice" role="alert">{charge.message}</p> : null}
 
               <p className="ed-checkout-secure">
                 <ShieldCheck size={15} />
@@ -453,6 +514,7 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false }: Che
           </div>
         </div>
       </aside>
-    </section>
+      </section>
+    </>
   );
 }

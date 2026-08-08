@@ -12,7 +12,7 @@
     "backend:start": "npm --prefix apps/backend run start",
     "backend:seed": "npm --prefix apps/backend run seed",
     "lint": "eslint .",
-    "test:unit": "node --import tsx --test src/lib/medusa/*.test.ts src/lib/medusa/catalogue/*.test.ts src/lib/medusa/cart/*.test.ts src/lib/medusa/checkout/*.test.ts",
+    "test:unit": "node --import tsx --test src/lib/medusa/*.test.ts src/lib/medusa/catalogue/*.test.ts src/lib/medusa/cart/*.test.ts src/lib/medusa/checkout/*.test.ts src/lib/utils/*.test.ts",
     "typecheck": "tsc --noEmit",
     "workers": "tsx --env-file=.env.local src/workers/index.ts",
     "workers:dev": "tsx watch --env-file=.env.local src/workers/index.ts"
