@@ -20,7 +20,7 @@ export type OrderDetail = OrderSummary & {
   shippingAddress: Record<string, unknown>;
   subtotal: number;
   shipping: number;
-  items: { title: string; sku: string; quantity: number; unitPrice: number; lineTotal: number }[];
+  items: { title: string; sku: string; variantId: string | null; quantity: number; unitPrice: number; lineTotal: number }[];
 };
 
 function generateOrderNumber() {
@@ -137,9 +137,9 @@ export async function getOrderById(orderId: string): Promise<OrderDetail | null>
   if (!order) return null;
 
   const items = await sql<
-    { title: string; sku: string | null; quantity: number; unit_price_amount: number; line_total_amount: number }[]
+    { title: string; sku: string | null; variant_id: string | null; quantity: number; unit_price_amount: number; line_total_amount: number }[]
   >`
-    select title, sku, quantity, unit_price_amount, line_total_amount
+    select title, sku, variant_id, quantity, unit_price_amount, line_total_amount
     from medusastore.order_items where order_id = ${orderId}
   `;
 
@@ -162,6 +162,7 @@ export async function getOrderById(orderId: string): Promise<OrderDetail | null>
     items: items.map((item) => ({
       title: item.title,
       sku: item.sku ?? "",
+      variantId: item.variant_id,
       quantity: item.quantity,
       unitPrice: item.unit_price_amount / 100,
       lineTotal: item.line_total_amount / 100,

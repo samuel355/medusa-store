@@ -28,10 +28,17 @@ create table if not exists medusastore.customers (
   customer_tier text not null default 'standard',
   reward_points integer not null default 0 check (reward_points >= 0),
   default_currency text not null default 'GHS',
+  medusa_customer_id text,
   metadata jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- create table if not exists is a no-op against a database that already has
+-- this table, so a new column on an existing table needs this explicit
+-- statement too (there was no prior "add a column" precedent in this file -
+-- every earlier column shipped by being part of the original create table).
+alter table medusastore.customers add column if not exists medusa_customer_id text;
 
 -- Lets one customer have multiple auth.users identities (email/password,
 -- Google, phone OTP) instead of customers.auth_user_id's single link, so

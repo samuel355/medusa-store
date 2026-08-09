@@ -1,12 +1,23 @@
 import { NextResponse } from "next/server";
-import { getOrdersForCustomer } from "@/lib/db/orders";
-import { resolveCustomerId } from "@/lib/auth/session";
+import { resolveCustomer } from "@/lib/auth/session";
+import { getMedusaCustomerToken } from "@/lib/medusa/customerIdentity";
+import { listMedusaOrdersForCustomer } from "@/lib/medusa/orders";
 
 export async function GET() {
-  const customerId = await resolveCustomerId();
-  if (!customerId) {
+  const customer = await resolveCustomer();
+  if (!customer) {
     return NextResponse.json({ orders: [] });
   }
 
-  return NextResponse.json({ orders: await getOrdersForCustomer(customerId) });
+  const token = await getMedusaCustomerToken(customer);
+  if (!token) {
+    return NextResponse.json({ orders: [] });
+  }
+
+  try {
+    return NextResponse.json({ orders: await listMedusaOrdersForCustomer(token) });
+  } catch (cause) {
+    console.error("list customer orders failed", cause);
+    return NextResponse.json({ orders: [] });
+  }
 }

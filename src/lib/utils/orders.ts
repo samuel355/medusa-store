@@ -17,16 +17,19 @@ export type OrderDetail = OrderSummary & {
   shippingAddress: Record<string, unknown>;
   subtotal: number;
   shipping: number;
-  items: { title: string; sku: string; quantity: number; unitPrice: number; lineTotal: number }[];
+  items: { title: string; sku: string; variantId: string | null; quantity: number; unitPrice: number; lineTotal: number }[];
 };
 
 export const ORDERS_UPDATED_EVENT = "begnon:orders-updated";
 
-export async function fetchOrders(): Promise<OrderSummary[]> {
+// /api/orders returns full order detail (Medusa order data, including line
+// items with variant IDs) for every order, not just summary fields - callers
+// that only need summary fields can still use OrderDetail as an OrderSummary.
+export async function fetchOrders(): Promise<OrderDetail[]> {
   try {
     const response = await fetch("/api/orders", { cache: "no-store" });
     if (!response.ok) return [];
-    const data = (await response.json()) as { orders: OrderSummary[] };
+    const data = (await response.json()) as { orders: OrderDetail[] };
     return data.orders;
   } catch {
     return [];

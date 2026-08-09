@@ -1,5 +1,5 @@
 import { createServerSupabaseClient } from "@/lib/integrations/supabase";
-import { getCustomerByAuthUserId, isAdminAuthUser as isAdminAuthUserId } from "@/lib/db/customers";
+import { getCustomerByAuthUserId, isAdminAuthUser as isAdminAuthUserId, type Customer } from "@/lib/db/customers";
 import { cookies } from "next/headers";
 
 function supabaseConfigured() {
@@ -23,11 +23,16 @@ export async function getAuthUser() {
   return user;
 }
 
-export async function resolveCustomerId(): Promise<string | undefined> {
+export async function resolveCustomer(): Promise<Customer | undefined> {
   const user = await getAuthUser();
   if (!user) return undefined;
 
   const customer = await getCustomerByAuthUserId(user.id);
+  return customer ?? undefined;
+}
+
+export async function resolveCustomerId(): Promise<string | undefined> {
+  const customer = await resolveCustomer();
   return customer?.id;
 }
 

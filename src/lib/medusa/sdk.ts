@@ -7,7 +7,7 @@ export const medusaConfig = resolveMedusaConfig();
 // The SDK publishes both ESM and CommonJS entry points. Some server-side TS
 // loaders expose the CommonJS default one level deeper, while Next.js consumes
 // the ESM default directly.
-const Medusa =
+export const Medusa =
   (MedusaImport as unknown as { default?: typeof MedusaImport }).default ??
   MedusaImport;
 

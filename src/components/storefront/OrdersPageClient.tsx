@@ -2,15 +2,25 @@
 
 import { CreditCard, PackageCheck, RotateCcw, Search, Truck, XCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { cancelOrder, fetchOrders, reorder, type OrderSummary } from "@/lib/utils/orders";
+import { cancelOrder, fetchOrders, reorder, type OrderDetail } from "@/lib/utils/orders";
 import { formatMoney } from "@/lib/utils/money";
+import { useCart } from "@/lib/medusa/cart/CartProvider";
+
+// A real Medusa order's id always looks like "order_...". Orders from the
+// old, now-unused legacy checkout path (see docs/architecture/commerce.md)
+// have a plain uuid id instead - Cancel/Reorder were only ever built against
+// that legacy table, so they only make sense for those.
+function isMedusaOrder(order: OrderDetail) {
+  return order.id.startsWith("order_");
+}
 
 export function OrdersPageClient() {
-  const [orders, setOrders] = useState<OrderSummary[]>([]);
+  const [orders, setOrders] = useState<OrderDetail[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("All");
   const [message, setMessage] = useState("");
+  const { addToCart } = useCart();
 
   useEffect(() => {
     fetchOrders().then((result) => {
@@ -34,7 +44,7 @@ export function OrdersPageClient() {
 
   const statuses = Array.from(new Set(["All", ...orders.map((order) => order.status)]));
 
-  async function handleCancel(order: OrderSummary) {
+  async function handleCancel(order: OrderDetail) {
     const cancelled = await cancelOrder(order.orderNumber);
     setMessage(cancelled ? `${order.orderNumber} cancelled.` : "This order can no longer be cancelled.");
     if (cancelled) {
@@ -42,9 +52,27 @@ export function OrdersPageClient() {
     }
   }
 
-  async function handleReorder(order: OrderSummary) {
-    const ok = await reorder(order.orderNumber);
-    setMessage(ok ? `${order.orderNumber} items moved back to cart.` : "Unable to reorder those items.");
+  async function handleReorder(order: OrderDetail) {
+    if (!isMedusaOrder(order)) {
+      const ok = await reorder(order.orderNumber);
+      setMessage(ok ? `${order.orderNumber} items moved back to cart.` : "Unable to reorder those items.");
+      return;
+    }
+
+    const reorderable = order.items.filter((item) => item.variantId);
+    if (!reorderable.length) {
+      setMessage("Those items are no longer available to reorder.");
+      return;
+    }
+
+    try {
+      for (const item of reorderable) {
+        await addToCart(item.variantId!, item.quantity);
+      }
+      setMessage(`${order.orderNumber} items moved back to cart.`);
+    } catch {
+      setMessage("Unable to reorder those items.");
+    }
   }
 
   if (isLoading) return null;
@@ -93,9 +121,11 @@ export function OrdersPageClient() {
               <button aria-label={`Reorder ${order.orderNumber}`} onClick={() => handleReorder(order)}>
                 <RotateCcw size={16} />
               </button>
-              <button aria-label={`Cancel ${order.orderNumber}`} onClick={() => handleCancel(order)}>
-                <XCircle size={16} />
-              </button>
+              {!isMedusaOrder(order) ? (
+                <button aria-label={`Cancel ${order.orderNumber}`} onClick={() => handleCancel(order)}>
+                  <XCircle size={16} />
+                </button>
+              ) : null}
             </div>
           </article>
         ))}

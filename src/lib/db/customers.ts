@@ -11,6 +11,7 @@ export type Customer = {
   avatarUrl: string;
   tier: string;
   rewardPoints: number;
+  medusaCustomerId: string | null;
   createdAt: string;
 };
 
@@ -25,6 +26,7 @@ type CustomerRow = {
   avatar_url: string | null;
   customer_tier: string;
   reward_points: number;
+  medusa_customer_id: string | null;
   created_at: string;
 };
 
@@ -40,6 +42,7 @@ function mapCustomer(row: CustomerRow): Customer {
     avatarUrl: row.avatar_url ?? "",
     tier: row.customer_tier,
     rewardPoints: row.reward_points,
+    medusaCustomerId: row.medusa_customer_id,
     createdAt: row.created_at,
   };
 }
@@ -148,6 +151,11 @@ export async function updateCustomerProfile(
   `;
 
   return mapCustomer(rows[0]);
+}
+
+export async function setMedusaCustomerId(customerId: string, medusaCustomerId: string): Promise<void> {
+  const sql = getSql();
+  await sql`update medusastore.customers set medusa_customer_id = ${medusaCustomerId} where id = ${customerId}`;
 }
 
 export async function isAdminAuthUser(authUserId: string): Promise<boolean> {

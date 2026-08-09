@@ -85,6 +85,18 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false }: Che
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [medusa, cart.id]);
 
+  // Best-effort: attaches this guest cart to the signed-in shopper's Medusa
+  // customer so the resulting order shows up in their dashboard order
+  // history later. Never blocks or surfaces errors to the payment UI.
+  useEffect(() => {
+    if (!medusa || !isSignedIn || !cart.id) return;
+    fetch("/api/medusa/attach-cart-customer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cartId: cart.id }),
+    }).catch(() => {});
+  }, [medusa, isSignedIn, cart.id]);
+
   function pollForConfirmation(orderNumber: string) {
     let attempts = 0;
     pollRef.current = setInterval(async () => {

@@ -3,6 +3,7 @@ import { ensureCustomerForAuthUser, isAdminAuthUser } from "@/lib/db/customers";
 import { sendPhoneOtp, verifyPhoneOtp } from "@/lib/auth/phoneOtp";
 import { signInWithVerifiedPhone } from "@/lib/auth/phoneSession";
 import { isValidGhanaPhone, normalizeGhanaPhone } from "@/lib/utils/validation";
+import { ensureMedusaCustomerLink } from "@/lib/medusa/customerIdentity";
 
 export async function POST(request: Request) {
   const body = (await request.json()) as { phone?: string; token?: string; step?: "send" | "verify" };
@@ -25,6 +26,7 @@ export async function POST(request: Request) {
     try {
       const user = await signInWithVerifiedPhone(phone);
       const customer = await ensureCustomerForAuthUser({ authUserId: user.id, phone, trustedPhone: phone });
+      await ensureMedusaCustomerLink(customer).catch(() => null);
       const admin = await isAdminAuthUser(user.id);
 
       return NextResponse.json({

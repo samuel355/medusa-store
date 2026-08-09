@@ -5,6 +5,7 @@ export function mapMedusaOrder(order: HttpTypes.StoreOrder): OrderDetail {
   const items = (order.items ?? []).map((item) => ({
     title: item.title ?? "Product",
     sku: item.variant_sku ?? "",
+    variantId: item.variant_id ?? null,
     quantity: item.quantity,
     unitPrice: item.unit_price,
     lineTotal: item.total,
@@ -23,11 +24,29 @@ export function mapMedusaOrder(order: HttpTypes.StoreOrder): OrderDetail {
     placedAt: order.created_at instanceof Date ? order.created_at.toISOString() : String(order.created_at),
     email: order.email ?? "",
     phone: address?.phone ?? "",
-    shippingAddress: { line1: address?.address_1, city: address?.city, countryCode: address?.country_code },
+    shippingAddress: {
+      recipient: [address?.first_name, address?.last_name].filter(Boolean).join(" "),
+      line1: address?.address_1,
+      line2: address?.address_2,
+      city: address?.city,
+      province: address?.province,
+      postalCode: address?.postal_code,
+      countryCode: address?.country_code,
+      phone: address?.phone,
+    },
     itemsSummary: items.map((item) => item.title).join(", "),
     itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
     items,
   };
+}
+
+export async function listMedusaOrdersForCustomer(token: string): Promise<OrderDetail[]> {
+  const { medusaSdk } = await import("./sdk");
+  const { orders } = await medusaSdk.store.order.list(
+    { fields: "+payment_status,+fulfillment_status,*items,*shipping_address", limit: 50, order: "-created_at" },
+    { Authorization: `Bearer ${token}` },
+  );
+  return orders.map(mapMedusaOrder);
 }
 
 export async function getMedusaOrderById(orderId: string): Promise<OrderDetail | null> {

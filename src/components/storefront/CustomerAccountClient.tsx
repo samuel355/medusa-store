@@ -1,13 +1,12 @@
 "use client";
 
 import {
-  Bell,
   CreditCard,
-  Heart,
   LogIn,
+  Mail,
+  MapPin,
   PackageCheck,
   Phone,
-  RotateCcw,
   Save,
   Truck,
   UserRound,
@@ -15,9 +14,11 @@ import {
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { type Customer } from "@/lib/db/customers";
-import { fetchOrders, type OrderSummary } from "@/lib/utils/orders";
+import { fetchOrders, type OrderDetail } from "@/lib/utils/orders";
 import { formatMoney } from "@/lib/utils/money";
 import { fetchWishlist, WishlistItem, WISHLIST_UPDATED_EVENT } from "@/lib/utils/wishlist";
+import { SettingsControls } from "@/components/storefront/SettingsControls";
+import { storeBrand } from "@/lib/store/brand";
 
 export type CustomerDashboardView = "overview" | "orders" | "wishlist" | "addresses" | "returns" | "preferences";
 
@@ -53,7 +54,7 @@ function AccountLoadingSkeleton() {
 export function CustomerAccountClient({ view = "overview" }: Readonly<{ view?: CustomerDashboardView }>) {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [profileDraft, setProfileDraft] = useState({ displayName: "", phone: "", email: "" });
-  const [orders, setOrders] = useState<OrderSummary[]>([]);
+  const [orders, setOrders] = useState<OrderDetail[]>([]);
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
   const [saved, setSaved] = useState(false);
   const [authState, setAuthState] = useState<"loading" | "signed-out" | "ready">("loading");
@@ -94,7 +95,36 @@ export function CustomerAccountClient({ view = "overview" }: Readonly<{ view?: C
     [orders, wishlist, customer]
   );
   const activeOrders = orders.filter((order) => ACTIVE_STATUSES.has(order.status));
-  const latestOrder = orders[0];
+
+  const addresses = useMemo(() => {
+    const byKey = new Map<string, { recipient: string; line1: string; line2: string; city: string; province: string; postalCode: string; countryCode: string; phone: string; orderNumbers: string[] }>();
+    for (const order of orders) {
+      const raw = order.shippingAddress as Record<string, unknown>;
+      const line1 = String(raw?.line1 ?? "").trim();
+      if (!line1) continue;
+      const city = String(raw?.city ?? "").trim();
+      const key = [line1, city, raw?.postalCode ?? ""].join("|").toLowerCase();
+      const existing = byKey.get(key);
+      if (existing) {
+        existing.orderNumbers.push(order.orderNumber);
+        continue;
+      }
+      byKey.set(key, {
+        recipient: String(raw?.recipient ?? "").trim(),
+        line1,
+        line2: String(raw?.line2 ?? "").trim(),
+        city,
+        province: String(raw?.province ?? "").trim(),
+        postalCode: String(raw?.postalCode ?? "").trim(),
+        countryCode: String(raw?.countryCode ?? "").trim().toUpperCase(),
+        phone: String(raw?.phone ?? "").trim(),
+        orderNumbers: [order.orderNumber],
+      });
+    }
+    return Array.from(byKey.values());
+  }, [orders]);
+
+  const deliveredOrders = orders.filter((order) => order.fulfillmentStatus === "delivered");
 
   async function saveProfile() {
     const response = await fetch("/api/customers/me", {
@@ -259,15 +289,35 @@ export function CustomerAccountClient({ view = "overview" }: Readonly<{ view?: C
 
         {view === "addresses" ? (
           <section id="addresses" className="account-card-grid">
-            <article className="dashboard-panel">
-              <h2>Latest order address</h2>
-              {latestOrder ? (
-                <p>Delivery details are attached to order {latestOrder.orderNumber}.</p>
-              ) : (
-                <p>No completed checkout yet, so there is no delivery address on file.</p>
-              )}
-              <span>Saved address book management is coming in a future update.</span>
-            </article>
+            {addresses.map((address) => (
+              <article className="dashboard-panel account-address-card" key={address.orderNumbers.join(",")}>
+                <MapPin size={20} />
+                {address.recipient ? <strong>{address.recipient}</strong> : null}
+                <p>
+                  {address.line1}
+                  {address.line2 ? <>, {address.line2}</> : null}
+                  <br />
+                  {[address.city, address.province, address.postalCode].filter(Boolean).join(", ")}
+                  {address.countryCode ? <>, {address.countryCode}</> : null}
+                </p>
+                {address.phone ? (
+                  <span>
+                    <Phone size={14} /> {address.phone}
+                  </span>
+                ) : null}
+                <span className="muted-copy">
+                  Used on {address.orderNumbers.length} order{address.orderNumbers.length === 1 ? "" : "s"}: {address.orderNumbers.join(", ")}
+                </span>
+              </article>
+            ))}
+            {!addresses.length ? (
+              <div className="account-empty-state">
+                <MapPin size={24} />
+                <strong>No delivery addresses yet</strong>
+                <span>Addresses used at checkout will show up here once you place an order.</span>
+                <a className="primary-action" href="/shop">Shop products</a>
+              </div>
+            ) : null}
           </section>
         ) : null}
 
@@ -296,39 +346,34 @@ export function CustomerAccountClient({ view = "overview" }: Readonly<{ view?: C
 
         {view === "returns" ? (
           <section id="returns" className="account-card-grid">
-            <article className="dashboard-panel">
-              <h2>Returns and exchanges</h2>
-              <p>Start a size exchange or refund request for eligible delivered orders.</p>
-              <a className="secondary-action" href="/orders">Review orders</a>
-            </article>
-            <article className="dashboard-panel">
-              <h2>Refund status</h2>
-              <p>No active refund requests. Eligible orders will show exchange and refund actions here.</p>
-              <span>Return notifications are sent through SMS and email.</span>
-            </article>
+            {deliveredOrders.map((order) => (
+              <article className="dashboard-panel" key={order.id}>
+                <h2>{order.orderNumber}</h2>
+                <p>{order.itemsSummary || `${order.itemCount} item${order.itemCount === 1 ? "" : "s"}`}</p>
+                <span>Delivered · {formatMoney(order.total)}</span>
+                <a
+                  className="secondary-action"
+                  href={`mailto:${storeBrand.email}?subject=${encodeURIComponent(`Return request — Order ${order.orderNumber}`)}`}
+                >
+                  <Mail size={16} />
+                  Request a return
+                </a>
+              </article>
+            ))}
+            {!deliveredOrders.length ? (
+              <div className="account-empty-state">
+                <PackageCheck size={24} />
+                <strong>No delivered orders yet</strong>
+                <span>Eligible orders show a return action here once they&apos;re marked delivered.</span>
+                <a className="primary-action" href="/orders">Review orders</a>
+              </div>
+            ) : null}
           </section>
         ) : null}
 
         {view === "preferences" ? (
-          <section id="preferences" className="account-card-grid">
-            <article className="dashboard-panel">
-              <h2>Notification preferences</h2>
-              <div className="account-preference-list">
-                <span>
-                  <Bell size={17} />
-                  SMS for payment, dispatch, and delivery
-                </span>
-                <span>
-                  <Heart size={17} />
-                  Back-in-stock wishlist alerts
-                </span>
-                <span>
-                  <PackageCheck size={17} />
-                  Email receipts and return updates
-                </span>
-              </div>
-              <a className="secondary-action" href="/settings">Manage in settings</a>
-            </article>
+          <section id="preferences" className="account-preferences-panel">
+            <SettingsControls />
           </section>
         ) : null}
         </>

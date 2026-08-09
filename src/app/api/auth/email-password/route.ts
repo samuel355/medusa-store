@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/integrations/supabase";
 import { ensureCustomerForAuthUser, isAdminAuthUser } from "@/lib/db/customers";
+import { ensureMedusaCustomerLink } from "@/lib/medusa/customerIdentity";
 
 export async function POST(request: Request) {
   const body = (await request.json()) as { email?: string; password?: string; mode?: "signup" | "login" };
@@ -35,6 +36,7 @@ export async function POST(request: Request) {
     authUserId: data.user.id,
     email: data.user.email,
   });
+  await ensureMedusaCustomerLink(customer).catch(() => null);
   const admin = await isAdminAuthUser(data.user.id);
 
   return NextResponse.json({

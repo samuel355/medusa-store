@@ -15,7 +15,8 @@ type EnvKey =
   | "R2_ACCESS_KEY_ID"
   | "R2_SECRET_ACCESS_KEY"
   | "R2_BUCKET_NAME"
-  | "R2_PUBLIC_URL";
+  | "R2_PUBLIC_URL"
+  | "MEDUSA_CUSTOMER_LINK_SECRET";
 
 export function readEnv(key: EnvKey, required = true) {
   const value = process.env[key];
