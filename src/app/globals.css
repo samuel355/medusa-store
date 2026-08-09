@@ -488,7 +488,7 @@ select {
   gap: 0.75rem;
   min-height: 54px;
   border-bottom: 1px solid var(--line);
-  color: #ffe5d1;
+  color: var(--text);
 }
 
 .order-list a div {
@@ -526,7 +526,7 @@ select {
   display: flex;
   align-items: center;
   gap: 0.45rem;
-  color: #ffe5d1;
+  color: var(--text);
 }
 
 .orders-table span {
@@ -590,7 +590,7 @@ select {
 }
 
 .confirmation-card strong {
-  color: #ffe5d1;
+  color: var(--text);
 }
 
 @media (max-width: 920px) {
@@ -640,11 +640,11 @@ select {
 
 .inline-notice {
   margin: 0.65rem 0 0;
-  border: 1px solid rgba(255, 211, 138, 0.28);
+  border: 1px solid rgba(222, 95, 28, 0.28);
   border-radius: 8px;
   padding: 0.65rem 0.8rem;
-  background: rgba(255, 211, 138, 0.1);
-  color: #ffe5d1;
+  background: rgba(222, 95, 28, 0.08);
+  color: #7a2f0d;
   font-size: 0.9rem;
   font-weight: 780;
 }
@@ -760,6 +760,17 @@ select {
   margin: 0 auto 1rem;
 }
 
+.account-preferences-panel .settings-grid {
+  grid-template-columns: 1fr;
+  width: 100%;
+  margin: 0;
+}
+
+.account-preferences-panel .settings-save {
+  width: 100%;
+  margin: 0 0 1rem;
+}
+
 .confirmation-summary {
   width: min(1180px, 100%);
   margin: 0 auto 1rem;
@@ -786,7 +797,7 @@ select {
   border-radius: 8px;
   padding: 0.65rem 0.75rem;
   background: rgba(255, 255, 255, 0.055);
-  color: #ffe5d1;
+  color: var(--text);
   font-weight: 800;
 }
 
@@ -816,7 +827,7 @@ select {
   border-radius: 8px;
   padding: 0 0.75rem;
   background: rgba(255, 255, 255, 0.065);
-  color: #ffe5d1;
+  color: var(--text);
   font-weight: 850;
   cursor: pointer;
 }
@@ -1421,6 +1432,7 @@ select:focus {
 }
 
 .account-sidebar-logout-form {
+  grid-column: 1 / -1;
   margin-top: 0.35rem;
   padding-top: 0.6rem;
   border-top: 1px solid #f0e2d7;
@@ -1555,8 +1567,7 @@ select:focus {
 }
 
 .account-signal-grid,
-.account-card-grid,
-.account-preference-list {
+.account-card-grid {
   display: grid;
   gap: 0.7rem;
 }
@@ -1609,6 +1620,34 @@ select:focus {
   margin: 0;
 }
 
+.account-card-grid .account-empty-state {
+  grid-column: 1 / -1;
+}
+
+.account-address-card {
+  display: grid;
+  gap: 0.35rem;
+  align-content: start;
+}
+
+.account-address-card svg {
+  color: #f4752c;
+}
+
+.account-address-card p {
+  margin: 0;
+  color: #17130f;
+  line-height: 1.5;
+}
+
+.account-address-card span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
 .account-empty-state {
   display: grid;
   gap: 0.55rem;
@@ -1616,17 +1655,6 @@ select:focus {
   padding: 1rem;
 }
 
-.account-preference-list span {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  border: 1px solid #f0e2d7;
-  border-radius: 12px;
-  padding: 0.7rem;
-  background: #fffaf5;
-  color: #475569;
-  font-weight: 750;
-}
 
 @media (max-width: 980px) {
   :root {
@@ -2021,8 +2049,7 @@ strong,
 .secondary-action,
 .market-section-head > a,
 .footer-trust-row span,
-.store-footer .footer-trust-row span,
-.account-preference-list span {
+.store-footer .footer-trust-row span {
   color: #1f2937 !important;
 }
 
@@ -2613,25 +2640,47 @@ strong,
   place-items: center;
   width: 36px;
   height: 36px;
+  padding: 0;
   border: 0;
+  border-radius: 8px;
   background: none;
   color: var(--text);
   cursor: pointer;
 }
 
+.account-menu-trigger:hover {
+  background: rgba(23, 19, 15, 0.06);
+}
+
 .account-menu-dropdown {
   position: absolute;
-  top: calc(100% + 10px);
+  top: calc(100% + 12px);
   right: 0;
   z-index: 40;
   display: grid;
-  width: 220px;
-  padding: 0.5rem;
-  border: 1px solid rgba(23, 19, 15, 0.1);
-  border-radius: 12px;
+  gap: 2px;
+  width: 232px;
+  max-width: calc(100vw - 24px);
+  padding: 0.6rem;
+  border: 1px solid #f0e2d7;
+  border-radius: 14px;
   background: #ffffff;
-  box-shadow: 0 16px 40px rgba(23, 19, 15, 0.14);
+  box-shadow: 0 20px 45px rgba(23, 19, 15, 0.16);
   animation: accountMenuIn 140ms ease;
+}
+
+.account-menu-dropdown::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  right: 12px;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px 0 0 0;
+  background: #ffffff;
+  border-top: 1px solid #f0e2d7;
+  border-left: 1px solid #f0e2d7;
+  transform: rotate(45deg);
 }
 
 @keyframes accountMenuIn {
@@ -2647,7 +2696,7 @@ strong,
 }
 
 .account-menu-greeting {
-  margin: 0.2rem 0.6rem 0.5rem;
+  margin: 0.1rem 0.15rem 0.45rem;
   color: var(--muted);
   font-size: 0.76rem;
   font-weight: 700;
