@@ -50,7 +50,7 @@ export function StoreFooter() {
           <a href="/customers">My account</a>
           <a href="/orders">Order history</a>
           <a href="/tracking">Track order</a>
-          <a href="/settings">Notifications</a>
+          <a href="/customers/preferences">Notifications</a>
           <a href="/cart">Checkout</a>
         </div>
         <div className="footer-column footer-contact">

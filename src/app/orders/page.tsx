@@ -1,9 +1,48 @@
 import { AppHero } from "@/components/store/AppHero";
 import { AppShell } from "@/components/store/AppShell";
+import { CustomerDashboardShell } from "@/components/storefront/CustomerDashboardShell";
 import { OrdersPageClient } from "@/components/storefront/OrdersPageClient";
+import { resolveCustomer } from "@/lib/auth/session";
 import { Bell, PackageCheck, Truck } from "lucide-react";
 
-export default function OrdersPage() {
+const explainerCards = (
+  <section className="order-explainer-grid">
+    <article>
+      <PackageCheck size={22} />
+      <strong>Processing</strong>
+      <span>Items are reserved, packed, and prepared for courier handoff.</span>
+    </article>
+    <article>
+      <Truck size={22} />
+      <strong>Dispatch</strong>
+      <span>Accra orders can move to same-day delivery while nationwide orders use courier dispatch.</span>
+    </article>
+    <article>
+      <Bell size={22} />
+      <strong>Updates</strong>
+      <span>SMS and confirmation events are structured for Arkesel notification workflows.</span>
+    </article>
+  </section>
+);
+
+export default async function OrdersPage() {
+  const customer = await resolveCustomer();
+
+  if (customer) {
+    return (
+      <AppShell className="app-page">
+        <CustomerDashboardShell>
+          <div className="account-content-head">
+            <p className="kicker">Customer account</p>
+            <h1>Orders and tracking</h1>
+          </div>
+          <OrdersPageClient />
+          {explainerCards}
+        </CustomerDashboardShell>
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell className="app-page">
       <AppHero
@@ -13,23 +52,7 @@ export default function OrdersPage() {
       />
 
       <OrdersPageClient />
-      <section className="order-explainer-grid">
-        <article>
-          <PackageCheck size={22} />
-          <strong>Processing</strong>
-          <span>Items are reserved, packed, and prepared for courier handoff.</span>
-        </article>
-        <article>
-          <Truck size={22} />
-          <strong>Dispatch</strong>
-          <span>Accra orders can move to same-day delivery while nationwide orders use courier dispatch.</span>
-        </article>
-        <article>
-          <Bell size={22} />
-          <strong>Updates</strong>
-          <span>SMS and confirmation events are structured for Arkesel notification workflows.</span>
-        </article>
-      </section>
+      {explainerCards}
     </AppShell>
   );
 }

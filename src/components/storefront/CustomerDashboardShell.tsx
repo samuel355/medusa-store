@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
   { label: "Overview", icon: Home, href: "/customers" },
-  { label: "Orders", icon: PackageCheck, href: "/customers/orders" },
+  { label: "Orders", icon: PackageCheck, href: "/customers/orders", activeOn: ["/customers/orders", "/orders", "/tracking", "/confirmations"] },
   { label: "Wishlist", icon: Heart, href: "/customers/wishlist" },
   { label: "Addresses", icon: MapPin, href: "/customers/addresses" },
   { label: "Returns", icon: RotateCcw, href: "/customers/returns" },
@@ -24,7 +24,7 @@ export function CustomerDashboardShell({ children }: Readonly<{ children: React.
       <aside className="account-sidebar" aria-label="Customer dashboard navigation">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
-          const active = pathname === item.href;
+          const active = (item.activeOn ?? [item.href]).includes(pathname);
           return (
             <a className={active ? "active" : ""} href={item.href} key={item.href}>
               <Icon size={17} />
