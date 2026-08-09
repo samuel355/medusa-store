@@ -2704,9 +2704,15 @@ strong,
   text-transform: uppercase;
 }
 
-.account-menu-dropdown a {
+/* Higher specificity than .topbar-inner .nav-actions a (which forces every
+   nav-actions <a> into a centered 36x36 icon box) - these are full-width
+   text rows, not icon buttons, and need to win that cascade fight. */
+.topbar-inner .nav-actions .account-menu-dropdown a {
   display: flex;
+  width: 100%;
+  height: auto;
   align-items: center;
+  justify-content: flex-start;
   gap: 0.55rem;
   min-height: 40px;
   border-radius: 8px;
@@ -2716,7 +2722,7 @@ strong,
   font-weight: 600;
 }
 
-.account-menu-dropdown a:hover {
+.topbar-inner .nav-actions .account-menu-dropdown a:hover {
   background: #fff7ed;
   color: var(--hot);
 }
