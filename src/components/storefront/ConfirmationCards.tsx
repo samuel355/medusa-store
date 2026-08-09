@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { fetchOrderByNumber, type OrderDetail } from "@/lib/utils/orders";
 import { formatMoney } from "@/lib/utils/money";
+import { deriveOrderStatus, ORDER_STATUS_LABELS } from "@/lib/utils/orderStatus";
 
 export function ConfirmationCards() {
   const searchParams = useSearchParams();
@@ -54,12 +55,18 @@ export function ConfirmationCards() {
     },
     {
       icon: PackageCheck,
-      status: order.fulfillmentStatus === "not_fulfilled" ? "Pending" : "Queued",
+      status: ORDER_STATUS_LABELS[deriveOrderStatus(order)],
       title: "Fulfillment",
       description:
-        order.fulfillmentStatus === "not_fulfilled"
+        deriveOrderStatus(order) === "pending"
           ? "Fulfillment starts once payment is confirmed."
-          : "Order handoff created for packing and dispatch.",
+          : deriveOrderStatus(order) === "confirmed"
+            ? "Order handoff created for packing and dispatch."
+            : deriveOrderStatus(order) === "shipped"
+              ? "Order is on its way to you."
+              : deriveOrderStatus(order) === "delivered"
+                ? "Order has been delivered."
+                : "Order was canceled.",
     },
   ];
 
@@ -68,7 +75,7 @@ export function ConfirmationCards() {
       <section className="dashboard-panel confirmation-summary">
         <h2>Order {order.orderNumber}</h2>
         <p>
-          {order.itemCount} item(s), total {formatMoney(order.total)}. Status: {order.status}.
+          {order.itemCount} item(s), total {formatMoney(order.total)}. Status: {ORDER_STATUS_LABELS[deriveOrderStatus(order)]}.
         </p>
         <div className="confirmation-items">
           {order.items.map((item) => (

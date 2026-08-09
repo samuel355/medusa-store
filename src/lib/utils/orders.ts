@@ -17,7 +17,7 @@ export type OrderDetail = OrderSummary & {
   shippingAddress: Record<string, unknown>;
   subtotal: number;
   shipping: number;
-  items: { title: string; sku: string; variantId: string | null; quantity: number; unitPrice: number; lineTotal: number }[];
+  items: { id: string; productId: string | null; title: string; sku: string; variantId: string | null; quantity: number; unitPrice: number; lineTotal: number }[];
 };
 
 export const ORDERS_UPDATED_EVENT = "begnon:orders-updated";
@@ -44,6 +44,23 @@ export async function fetchOrderByNumber(orderNumber: string): Promise<OrderDeta
     return data.order;
   } catch {
     return null;
+  }
+}
+
+// For the manual "type it in" tracking search box, not link-based lookups
+// (order number alone isn't a big enough secret - see /api/orders/track).
+export async function trackOrder(orderNumber: string, contact: string): Promise<{ order: OrderDetail | null; error: string | null }> {
+  try {
+    const response = await fetch("/api/orders/track", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderNumber, contact }),
+    });
+    const data = (await response.json()) as { order?: OrderDetail; error?: string };
+    if (!response.ok) return { order: null, error: data.error ?? "No matching order found." };
+    return { order: data.order ?? null, error: null };
+  } catch {
+    return { order: null, error: "Something went wrong. Please try again." };
   }
 }
 

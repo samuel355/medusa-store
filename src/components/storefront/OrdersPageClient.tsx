@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { cancelOrder, fetchOrders, reorder, type OrderDetail } from "@/lib/utils/orders";
 import { formatMoney } from "@/lib/utils/money";
 import { useCart } from "@/lib/medusa/cart/CartProvider";
+import { deriveOrderStatus, isOrderPaid, ORDER_STATUS_LABELS, ORDER_STATUS_ORDER } from "@/lib/utils/orderStatus";
 
 // A real Medusa order's id always looks like "order_...". Orders from the
 // old, now-unused legacy checkout path (see docs/architecture/commerce.md)
@@ -31,10 +32,11 @@ export function OrdersPageClient() {
 
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
-      const statusMatch = status === "All" || order.status === status;
+      const friendlyStatus = ORDER_STATUS_LABELS[deriveOrderStatus(order)];
+      const statusMatch = status === "All" || friendlyStatus === status;
       const queryMatch =
         !query.trim() ||
-        [order.orderNumber, order.itemsSummary, order.paymentStatus, order.status]
+        [order.orderNumber, order.itemsSummary, friendlyStatus]
           .join(" ")
           .toLowerCase()
           .includes(query.trim().toLowerCase());
@@ -42,7 +44,7 @@ export function OrdersPageClient() {
     });
   }, [orders, query, status]);
 
-  const statuses = Array.from(new Set(["All", ...orders.map((order) => order.status)]));
+  const statuses = ["All", ...ORDER_STATUS_ORDER.map((value) => ORDER_STATUS_LABELS[value])];
 
   async function handleCancel(order: OrderDetail) {
     const cancelled = await cancelOrder(order.orderNumber);
@@ -109,15 +111,15 @@ export function OrdersPageClient() {
             </div>
             <div>
               <Truck size={18} />
-              <span>{order.status}</span>
+              <span>{ORDER_STATUS_LABELS[deriveOrderStatus(order)]}</span>
             </div>
             <div>
               <CreditCard size={18} />
-              <span>{order.paymentStatus}</span>
+              <span>{isOrderPaid(order.paymentStatus) ? "Paid" : "Payment pending"}</span>
             </div>
             <b>{formatMoney(order.total)}</b>
             <div className="order-actions">
-              <a href={`/tracking?order=${order.orderNumber}`}>Track</a>
+              <a href={`/tracking?order=${encodeURIComponent(order.id)}`}>Track</a>
               <button aria-label={`Reorder ${order.orderNumber}`} onClick={() => handleReorder(order)}>
                 <RotateCcw size={16} />
               </button>

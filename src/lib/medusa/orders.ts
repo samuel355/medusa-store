@@ -3,6 +3,8 @@ import type { OrderDetail } from "@/lib/db/orders";
 
 export function mapMedusaOrder(order: HttpTypes.StoreOrder): OrderDetail {
   const items = (order.items ?? []).map((item) => ({
+    id: item.id,
+    productId: item.product_id ?? null,
     title: item.title ?? "Product",
     sku: item.variant_sku ?? "",
     variantId: item.variant_id ?? null,
@@ -13,7 +15,7 @@ export function mapMedusaOrder(order: HttpTypes.StoreOrder): OrderDetail {
   const address = order.shipping_address;
   return {
     id: order.id,
-    orderNumber: String(order.display_id ?? order.id),
+    orderNumber: order.custom_display_id || String(order.display_id ?? order.id),
     status: order.status,
     paymentStatus: order.payment_status === "captured" || order.payment_status === "authorized" ? "paid" : order.payment_status,
     fulfillmentStatus: order.fulfillment_status,
@@ -43,7 +45,7 @@ export function mapMedusaOrder(order: HttpTypes.StoreOrder): OrderDetail {
 export async function listMedusaOrdersForCustomer(token: string): Promise<OrderDetail[]> {
   const { medusaSdk } = await import("./sdk");
   const { orders } = await medusaSdk.store.order.list(
-    { fields: "+payment_status,+fulfillment_status,*items,*shipping_address", limit: 50, order: "-created_at" },
+    { fields: "+payment_status,+fulfillment_status,+custom_display_id,*items,items.product_id,*shipping_address", limit: 50, order: "-created_at" },
     { Authorization: `Bearer ${token}` },
   );
   return orders.map(mapMedusaOrder);
@@ -60,7 +62,7 @@ export async function getMedusaOrderById(orderId: string): Promise<OrderDetail |
   const id = `order_${match[1]}`;
   try {
     const { medusaSdk } = await import("./sdk");
-    const { order } = await medusaSdk.store.order.retrieve(id, { fields: "+payment_status,+fulfillment_status,*items,*shipping_address" });
+    const { order } = await medusaSdk.store.order.retrieve(id, { fields: "+payment_status,+fulfillment_status,+custom_display_id,*items,items.product_id,*shipping_address" });
     return mapMedusaOrder(order);
   } catch {
     return null;

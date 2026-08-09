@@ -1,4 +1,4 @@
-import { ArrowLeft, CreditCard, RotateCcw, Truck } from "lucide-react";
+import { ArrowLeft, CreditCard, RotateCcw, Star, Truck } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/store/AppShell";
@@ -7,6 +7,7 @@ import { ProductGallery } from "@/components/storefront/ProductGallery";
 import { ProductPurchasePanel } from "@/components/storefront/ProductPurchasePanel";
 import { getProductBySlug, getRelatedProducts } from "@/lib/db/products";
 import { formatMoney } from "@/lib/utils/money";
+import { fetchProductReviews } from "@/lib/medusa/reviews";
 
 export const revalidate = 60;
 
@@ -30,6 +31,7 @@ export default async function ProductDetailsPage({ params }: { params: Promise<{
 
   const galleryImages = product.images.length ? product.images : [product.image];
   const relatedProducts = await getRelatedProducts(product.categoryId, product.id, 4);
+  const reviewSummary = await fetchProductReviews(product.id);
 
   const specs = [
     product.brand ? { label: "Brand", value: product.brand } : null,
@@ -107,6 +109,38 @@ export default async function ProductDetailsPage({ params }: { params: Promise<{
             <span>{product.warranty || "Standard return policy applies."}</span>
           </div>
         </div>
+      </section>
+
+      <section className="ed-reviews">
+        <div className="ed-section-head">
+          <div>
+            <p className="ed-eyebrow">Customer reviews</p>
+            <h2>
+              {reviewSummary.count
+                ? `${reviewSummary.average!.toFixed(1)} out of 5 · ${reviewSummary.count} review${reviewSummary.count === 1 ? "" : "s"}`
+                : "No reviews yet"}
+            </h2>
+          </div>
+        </div>
+        {reviewSummary.reviews.length ? (
+          <div className="ed-review-grid">
+            {reviewSummary.reviews.map((review) => (
+              <article className="ed-review-card" key={review.id}>
+                <div className="ed-review-stars" aria-label={`Rated ${review.rating} out of 5`}>
+                  {Array.from({ length: 5 }).map((_, index) => (
+                    <Star key={index} size={15} fill={index < review.rating ? "currentColor" : "none"} />
+                  ))}
+                </div>
+                <p>{review.body}</p>
+                <span>
+                  {review.customer_name} &middot; {new Date(review.created_at).toLocaleDateString()}
+                </span>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="muted-copy">Be the first to review this product after your order is delivered.</p>
+        )}
       </section>
 
       {relatedProducts.length > 0 ? (

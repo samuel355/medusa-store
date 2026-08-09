@@ -20,10 +20,9 @@ import { formatMoney } from "@/lib/utils/money";
 import { fetchWishlist, WishlistItem, WISHLIST_UPDATED_EVENT } from "@/lib/utils/wishlist";
 import { SettingsControls } from "@/components/storefront/SettingsControls";
 import { storeBrand } from "@/lib/store/brand";
+import { deriveOrderStatus, ORDER_STATUS_LABELS } from "@/lib/utils/orderStatus";
 
 export type CustomerDashboardView = "overview" | "orders" | "wishlist" | "addresses" | "returns" | "preferences";
-
-const ACTIVE_STATUSES = new Set(["pending", "confirmed", "processing", "packed", "out_for_delivery"]);
 
 const VIEW_META: Record<CustomerDashboardView, { kicker: string; title: string }> = {
   overview: { kicker: "Customer account", title: "Customer dashboard" },
@@ -89,13 +88,13 @@ export function CustomerAccountClient({ view = "overview" }: Readonly<{ view?: C
   const stats = useMemo(
     () => [
       { label: "Total orders", value: String(orders.length) },
-      { label: "Active deliveries", value: String(orders.filter((order) => ACTIVE_STATUSES.has(order.status)).length) },
+      { label: "Active deliveries", value: String(orders.filter((order) => ["confirmed", "shipped"].includes(deriveOrderStatus(order))).length) },
       { label: "Wishlist items", value: String(wishlist.length) },
       { label: "Reward points", value: String(customer?.rewardPoints ?? 0) },
     ],
     [orders, wishlist, customer]
   );
-  const activeOrders = orders.filter((order) => ACTIVE_STATUSES.has(order.status));
+  const activeOrders = orders.filter((order) => ["confirmed", "shipped"].includes(deriveOrderStatus(order)));
 
   const addresses = useMemo(() => {
     const byKey = new Map<string, { recipient: string; line1: string; line2: string; city: string; province: string; postalCode: string; countryCode: string; phone: string; orderNumbers: string[] }>();
@@ -125,7 +124,7 @@ export function CustomerAccountClient({ view = "overview" }: Readonly<{ view?: C
     return Array.from(byKey.values());
   }, [orders]);
 
-  const deliveredOrders = orders.filter((order) => order.fulfillmentStatus === "delivered");
+  const deliveredOrders = orders.filter((order) => deriveOrderStatus(order) === "delivered");
 
   async function saveProfile() {
     const response = await fetch("/api/customers/me", {
@@ -267,11 +266,11 @@ export function CustomerAccountClient({ view = "overview" }: Readonly<{ view?: C
             </div>
             <div className="order-list compact account-orders">
               {orders.slice(0, 4).map((order) => (
-                <a href={`/tracking?order=${order.orderNumber}`} key={order.id}>
+                <a href={`/tracking?order=${encodeURIComponent(order.id)}`} key={order.id}>
                   <PackageCheck size={18} />
                   <div>
                     <strong>{order.orderNumber}</strong>
-                    <span>{order.status} / {order.fulfillmentStatus}</span>
+                    <span>{ORDER_STATUS_LABELS[deriveOrderStatus(order)]}</span>
                   </div>
                   <b>{formatMoney(order.total)}</b>
                 </a>
