@@ -1,6 +1,7 @@
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import type { MedusaContainer } from "@medusajs/framework/types"
 import { sendNotifications } from "../lib/notify-helpers"
+import { renderEmailShell } from "../lib/email-template"
 
 type OrderCanceledEvent = { event: { data: { id: string } }; container: MedusaContainer }
 
@@ -33,7 +34,11 @@ export default async function orderCanceledHandler({ event, container }: OrderCa
       template: "order-canceled-customer",
       content: {
         subject: `Order canceled — ${orderRef}`,
-        html: `<p>Hi ${customerName},</p><p>Your Begnon order ${orderRef} has been canceled.</p>`,
+        html: renderEmailShell({
+          preheader: `Your Begnon order ${orderRef} has been canceled.`,
+          heading: `Order ${orderRef} has been canceled.`,
+          intro: `Hi ${customerName}, this order has been canceled and won't be charged or shipped. Contact us if this wasn't you.`,
+        }),
       },
     } : null,
   ])

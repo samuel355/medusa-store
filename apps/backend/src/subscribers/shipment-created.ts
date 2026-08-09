@@ -1,6 +1,7 @@
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import type { MedusaContainer } from "@medusajs/framework/types"
 import { sendNotifications } from "../lib/notify-helpers"
+import { renderCtaButton, renderEmailShell } from "../lib/email-template"
 
 type ShipmentCreatedEvent = { event: { data: { id: string; no_notification?: boolean } }; container: MedusaContainer }
 
@@ -21,6 +22,7 @@ export default async function shipmentCreatedHandler({ event, container }: Shipm
 
   const customerName = order.shipping_address?.first_name || "there"
   const orderRef = `#${order.display_id}`
+  const storeUrl = (process.env.PLUGIN_STORE_URL || "http://localhost:3000").replace(/\/$/, "")
 
   await sendNotifications(notificationService, logger, [
     order.shipping_address?.phone ? {
@@ -35,7 +37,12 @@ export default async function shipmentCreatedHandler({ event, container }: Shipm
       template: "order-shipped-customer",
       content: {
         subject: `Order shipped — ${orderRef}`,
-        html: `<p>Hi ${customerName},</p><p>Your Begnon order ${orderRef} has shipped and is on its way.</p>`,
+        html: renderEmailShell({
+          preheader: `Your Begnon order ${orderRef} has shipped.`,
+          heading: `Order ${orderRef} is on its way.`,
+          intro: `Hi ${customerName}, your order has shipped and is heading to you now.`,
+          bodyHtml: renderCtaButton("Track your order", `${storeUrl}/tracking?order=${encodeURIComponent(orderRef)}`),
+        }),
       },
     } : null,
   ])
