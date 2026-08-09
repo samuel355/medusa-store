@@ -6,11 +6,16 @@ loadEnv(process.env.NODE_ENV || "development", resolveEnvironmentDirectory(proce
 
 const { enabled: redisEnabled, redisUrl } = resolveRedisConfiguration(process.env);
 
+// event-bus-redis is deliberately not configured here: it's built on
+// BullMQ, whose worker runs continuous background maintenance (stalled-job
+// checks, delayed-job scanning) on its own timer regardless of real event
+// volume - confirmed live to fire every 1-2s even with zero traffic, which
+// alone exhausted Upstash's request quota. Omitting it makes Medusa fall
+// back to its default local (in-process EventEmitter) event bus - same
+// subscribers, same notifications, no Redis involved. Trade-off: events
+// aren't durable across a process restart, which is an acceptable trade
+// for a single-instance deployment.
 const redisModules = redisEnabled ? [
-  {
-    resolve: "@medusajs/medusa/event-bus-redis",
-    options: { redisUrl, queueName: "begnon-events" },
-  },
   {
     resolve: "@medusajs/medusa/cache-redis",
     options: { redisUrl, namespace: "begnon:" },
