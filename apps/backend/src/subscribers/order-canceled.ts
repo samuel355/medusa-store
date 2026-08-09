@@ -12,14 +12,14 @@ export default async function orderCanceledHandler({ event, container }: OrderCa
 
   const { data: orders } = await query.graph({
     entity: "order",
-    fields: ["id", "display_id", "email", "shipping_address.phone", "shipping_address.first_name"],
+    fields: ["id", "display_id", "custom_display_id", "email", "shipping_address.phone", "shipping_address.first_name"],
     filters: { id: event.data.id },
   })
   const order = orders[0]
   if (!order) return
 
   const customerName = order.shipping_address?.first_name || "there"
-  const orderRef = `#${order.display_id}`
+  const orderRef = `#${order.custom_display_id ?? order.display_id}`
 
   await sendNotifications(notificationService, logger, [
     order.shipping_address?.phone ? {

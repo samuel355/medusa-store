@@ -56,6 +56,9 @@ module.exports = defineConfig({
   },
   modules: [
     {
+      resolve: "./src/modules/reviews",
+    },
+    {
       resolve: "@medusajs/medusa/payment",
       options: {
         providers: [
@@ -105,7 +108,14 @@ module.exports = defineConfig({
     // sequential queries). Safe to raise since this connects through
     // Supabase's transaction pooler (port 6543), not raw Postgres, so it
     // doesn't compete for Postgres's own low connection ceiling directly.
-    databaseDriverOptions: { pool: { min: 2, max: 20 } },
+    // Supabase's transaction pooler presents a cert chain that Node's
+    // default trust store won't validate even though sslmode=require is set
+    // on the URL - connection is still encrypted, this only skips chain
+    // verification (same effective trust level `uselibpqcompat`'s
+    // `sslmode=require` already implies, matching everyday query traffic;
+    // migration tooling's own DB client doesn't parse that URL flag the
+    // same way and fails closed without this).
+    databaseDriverOptions: { pool: { min: 2, max: 20 }, connection: { ssl: { rejectUnauthorized: false } } },
     ...(redisEnabled ? { redisUrl } : {}),
     http: {
       storeCors: process.env.STORE_CORS!,

@@ -13,7 +13,7 @@ export default async function orderPlacedHandler({ event, container }: OrderPlac
   const { data: orders } = await query.graph({
     entity: "order",
     fields: [
-      "id", "display_id", "email", "currency_code", "total", "subtotal", "shipping_total",
+      "id", "display_id", "custom_display_id", "email", "currency_code", "total", "subtotal", "shipping_total",
       "shipping_address.phone", "shipping_address.first_name",
       "items.title", "items.quantity", "items.unit_price", "items.total", "items.thumbnail",
     ],
@@ -25,7 +25,7 @@ export default async function orderPlacedHandler({ event, container }: OrderPlac
   const customerName = order.shipping_address?.first_name || "there"
   const currencyCode = order.currency_code ?? "GHS"
   const total = money(order.total ?? 0, currencyCode)
-  const orderRef = `#${order.display_id}`
+  const orderRef = `#${order.custom_display_id ?? order.display_id}`
   const storeUrl = (process.env.PLUGIN_STORE_URL || "http://localhost:3000").replace(/\/$/, "")
   const items = (order.items ?? []).filter((item) => item !== null).map((item) => ({
     title: item.title ?? "Product",
@@ -45,7 +45,7 @@ export default async function orderPlacedHandler({ event, container }: OrderPlac
         { subtotal: order.subtotal ?? 0, shipping: order.shipping_total ?? 0, total: order.total ?? 0 },
         currencyCode,
       ) +
-      renderCtaButton("Track your order", `${storeUrl}/tracking?order=${encodeURIComponent(orderRef)}`),
+      renderCtaButton("Track your order", `${storeUrl}/tracking?order=${encodeURIComponent(order.id)}`),
   })
 
   await sendNotifications(notificationService, logger, [

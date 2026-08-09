@@ -14,14 +14,14 @@ export default async function shipmentCreatedHandler({ event, container }: Shipm
 
   const { data: fulfillments } = await query.graph({
     entity: "fulfillment",
-    fields: ["id", "order.id", "order.display_id", "order.email", "order.shipping_address.phone", "order.shipping_address.first_name"],
+    fields: ["id", "order.id", "order.display_id", "order.custom_display_id", "order.email", "order.shipping_address.phone", "order.shipping_address.first_name"],
     filters: { id: event.data.id },
   })
   const order = fulfillments[0]?.order
   if (!order) return
 
   const customerName = order.shipping_address?.first_name || "there"
-  const orderRef = `#${order.display_id}`
+  const orderRef = `#${order.custom_display_id ?? order.display_id}`
   const storeUrl = (process.env.PLUGIN_STORE_URL || "http://localhost:3000").replace(/\/$/, "")
 
   await sendNotifications(notificationService, logger, [
@@ -41,7 +41,7 @@ export default async function shipmentCreatedHandler({ event, container }: Shipm
           preheader: `Your Begnon order ${orderRef} has shipped.`,
           heading: `Order ${orderRef} is on its way.`,
           intro: `Hi ${customerName}, your order has shipped and is heading to you now.`,
-          bodyHtml: renderCtaButton("Track your order", `${storeUrl}/tracking?order=${encodeURIComponent(orderRef)}`),
+          bodyHtml: renderCtaButton("Track your order", `${storeUrl}/tracking?order=${encodeURIComponent(order.id)}`),
         }),
       },
     } : null,
