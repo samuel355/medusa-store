@@ -35,7 +35,7 @@ services:
       - key: DATABASE_URL
         sync: false
       - key: DATABASE_SCHEMA
-        value: medusastore
+        value: begnon
 
       - key: MEDUSA_REDIS_ENABLED
         value: "true"
@@ -63,8 +63,6 @@ services:
         sync: false
 
       - key: PAYSTACK_SECRET_KEY
-        sync: false
-      - key: PAYSTACK_WEBHOOK_SECRET
         sync: false
 
       - key: ARKESEL_API_KEY

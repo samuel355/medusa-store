@@ -2,12 +2,20 @@ import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/integrations/supabase";
 import { ensureCustomerForAuthUser, isAdminAuthUser } from "@/lib/db/customers";
 import { ensureMedusaCustomerLink } from "@/lib/medusa/customerIdentity";
+import { clientIp, rateLimit } from "@/lib/utils/rateLimit";
 
 export async function POST(request: Request) {
   const body = (await request.json()) as { email?: string; password?: string; mode?: "signup" | "login" };
 
   if (!body.email || !body.password) {
     return NextResponse.json({ error: "Email and password are required." }, { status: 400 });
+  }
+
+  // Guards against credential-stuffing/brute-force: per-IP, not per-email, so
+  // it can't be used to lock a victim out of their own account.
+  const limit = rateLimit(`email-password:${clientIp(request)}`, { limit: 15, windowMs: 10 * 60 * 1000 });
+  if (!limit.allowed) {
+    return NextResponse.json({ error: "Too many attempts. Please try again later." }, { status: 429 });
   }
 
   const supabase = await createServerSupabaseClient();
