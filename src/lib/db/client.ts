@@ -7,7 +7,7 @@ export function getSql() {
   if (!sql) {
     const connectionString = readEnv("DATABASE_URL").replace(/[?&]uselibpqcompat=true/, "");
     sql = postgres(connectionString, {
-      connection: { search_path: "medusastore" },
+      connection: { search_path: "begnon" },
       max: 5,
       prepare: false,
     });

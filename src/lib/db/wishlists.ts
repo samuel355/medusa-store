@@ -19,16 +19,16 @@ export async function getWishlist(customerId: string): Promise<WishlistItem[]> {
       media.url as image,
       variants.price_amount,
       c.name as category_name
-    from medusastore.wishlists w
-    join medusastore.products p on p.id = w.product_id
-    left join medusastore.categories c on c.id = p.category_id
+    from begnon.wishlists w
+    join begnon.products p on p.id = w.product_id
+    left join begnon.categories c on c.id = p.category_id
     left join lateral (
-      select pm.url from medusastore.product_media pm
+      select pm.url from begnon.product_media pm
       where pm.product_id = p.id order by pm.sort_order limit 1
     ) media on true
     left join lateral (
       select min(v.price_amount) as price_amount
-      from medusastore.product_variants v where v.product_id = p.id and v.is_active = true
+      from begnon.product_variants v where v.product_id = p.id and v.is_active = true
     ) variants on true
     where w.customer_id = ${customerId}
     order by w.created_at desc
@@ -47,14 +47,14 @@ export async function getWishlist(customerId: string): Promise<WishlistItem[]> {
 export async function toggleWishlistItem(customerId: string, productId: string) {
   const sql = getSql();
   const existing = await sql<{ id: string }[]>`
-    select id from medusastore.wishlists where customer_id = ${customerId} and product_id = ${productId}
+    select id from begnon.wishlists where customer_id = ${customerId} and product_id = ${productId}
   `;
 
   if (existing.length > 0) {
-    await sql`delete from medusastore.wishlists where id = ${existing[0].id}`;
+    await sql`delete from begnon.wishlists where id = ${existing[0].id}`;
     return { inWishlist: false };
   }
 
-  await sql`insert into medusastore.wishlists (customer_id, product_id) values (${customerId}, ${productId})`;
+  await sql`insert into begnon.wishlists (customer_id, product_id) values (${customerId}, ${productId})`;
   return { inWishlist: true };
 }

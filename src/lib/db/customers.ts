@@ -50,8 +50,8 @@ function mapCustomer(row: CustomerRow): Customer {
 export async function getCustomerByAuthUserId(authUserId: string): Promise<Customer | null> {
   const sql = getSql();
   const rows = await sql<CustomerRow[]>`
-    select c.* from medusastore.customers c
-    join medusastore.customer_auth_identities i on i.customer_id = c.id
+    select c.* from begnon.customers c
+    join begnon.customer_auth_identities i on i.customer_id = c.id
     where i.auth_user_id = ${authUserId}
   `;
 
@@ -98,7 +98,7 @@ export async function ensureCustomerForAuthUser(input: {
 
   if (verifiedEmail || verifiedPhone) {
     const [match] = await sql<CustomerRow[]>`
-      select * from medusastore.customers
+      select * from begnon.customers
       where (${verifiedEmail}::text is not null and email = ${verifiedEmail})
          or (${verifiedPhone}::text is not null and phone = ${verifiedPhone})
       limit 1
@@ -106,12 +106,12 @@ export async function ensureCustomerForAuthUser(input: {
 
     if (match) {
       await sql`
-        insert into medusastore.customer_auth_identities (auth_user_id, customer_id)
+        insert into begnon.customer_auth_identities (auth_user_id, customer_id)
         values (${input.authUserId}, ${match.id})
         on conflict (auth_user_id) do nothing
       `;
       const [updated] = await sql<CustomerRow[]>`
-        update medusastore.customers set
+        update begnon.customers set
           email = coalesce(email, ${verifiedEmail}),
           phone = coalesce(phone, ${verifiedPhone})
         where id = ${match.id}
@@ -122,12 +122,12 @@ export async function ensureCustomerForAuthUser(input: {
   }
 
   const [created] = await sql<CustomerRow[]>`
-    insert into medusastore.customers (auth_user_id, email, phone, display_name)
+    insert into begnon.customers (auth_user_id, email, phone, display_name)
     values (${input.authUserId}, ${input.email ?? null}, ${input.phone ?? null}, ${input.displayName ?? input.email ?? input.phone ?? null})
     returning *
   `;
   await sql`
-    insert into medusastore.customer_auth_identities (auth_user_id, customer_id)
+    insert into begnon.customer_auth_identities (auth_user_id, customer_id)
     values (${input.authUserId}, ${created.id})
   `;
 
@@ -140,7 +140,7 @@ export async function updateCustomerProfile(
 ): Promise<Customer> {
   const sql = getSql();
   const rows = await sql<CustomerRow[]>`
-    update medusastore.customers set
+    update begnon.customers set
       first_name = coalesce(${patch.firstName ?? null}, first_name),
       last_name = coalesce(${patch.lastName ?? null}, last_name),
       display_name = coalesce(${patch.displayName ?? null}, display_name),
@@ -155,13 +155,13 @@ export async function updateCustomerProfile(
 
 export async function setMedusaCustomerId(customerId: string, medusaCustomerId: string): Promise<void> {
   const sql = getSql();
-  await sql`update medusastore.customers set medusa_customer_id = ${medusaCustomerId} where id = ${customerId}`;
+  await sql`update begnon.customers set medusa_customer_id = ${medusaCustomerId} where id = ${customerId}`;
 }
 
 export async function isAdminAuthUser(authUserId: string): Promise<boolean> {
   const sql = getSql();
   const rows = await sql<{ id: string }[]>`
-    select id from medusastore.admin_users where auth_user_id = ${authUserId} and is_active = true
+    select id from begnon.admin_users where auth_user_id = ${authUserId} and is_active = true
   `;
 
   return rows.length > 0;

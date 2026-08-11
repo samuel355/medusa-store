@@ -1,8 +1,8 @@
 # Supabase Database
 
-Paste `medusastore_schema.sql` into the Supabase SQL Editor.
+Paste `begnon_schema.sql` into the Supabase SQL Editor.
 
-It creates the `medusastore` schema with:
+It creates the `begnon` schema with:
 
 - customers, addresses, customer settings
 - categories, products, product media, variants, inventory movements
@@ -19,6 +19,6 @@ It creates the `medusastore` schema with:
 After running it, create your first admin by inserting your Supabase Auth user id:
 
 ```sql
-insert into medusastore.admin_users (auth_user_id, role)
+insert into begnon.admin_users (auth_user_id, role)
 values ('YOUR_AUTH_USER_ID', 'owner');
 ```

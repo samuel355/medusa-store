@@ -41,7 +41,7 @@ export async function createOrderFromCart(
     const totalPesewas = Math.round(cart.totals.total * 100);
 
     const [order] = await tx<{ id: string; order_number: string }[]>`
-      insert into medusastore.orders (
+      insert into begnon.orders (
         order_number, customer_id, cart_id, email, phone,
         subtotal_amount, shipping_amount, total_amount, shipping_address
       ) values (
@@ -56,7 +56,7 @@ export async function createOrderFromCart(
       const lineTotalPesewas = Math.round(item.lineTotal * 100);
 
       await tx`
-        insert into medusastore.order_items (
+        insert into begnon.order_items (
           order_id, product_id, variant_id, title, sku, quantity, unit_price_amount, line_total_amount
         ) values (
           ${order.id}, ${item.productId}, ${item.variantId}, ${item.name}, ${null},
@@ -65,7 +65,7 @@ export async function createOrderFromCart(
       `;
     }
 
-    await tx`update medusastore.carts set status = 'converted' where id = ${cart.id}`;
+    await tx`update begnon.carts set status = 'converted' where id = ${cart.id}`;
 
     return { id: order.id, orderNumber: order.order_number, totalPesewas };
   });
@@ -92,8 +92,8 @@ export async function getOrdersForCustomer(customerId: string): Promise<OrderSum
       o.total_amount, o.currency, o.placed_at,
       string_agg(oi.title, ', ') as items_summary,
       count(oi.id) as item_count
-    from medusastore.orders o
-    left join medusastore.order_items oi on oi.order_id = o.id
+    from begnon.orders o
+    left join begnon.order_items oi on oi.order_id = o.id
     where o.customer_id = ${customerId}
     group by o.id
     order by o.placed_at desc
@@ -132,7 +132,7 @@ export async function getOrderById(orderId: string): Promise<OrderDetail | null>
       shipping_address: Record<string, unknown>;
     }[]
   >`
-    select * from medusastore.orders where id = ${orderId}
+    select * from begnon.orders where id = ${orderId}
   `;
   if (!order) return null;
 
@@ -140,7 +140,7 @@ export async function getOrderById(orderId: string): Promise<OrderDetail | null>
     { id: string; title: string; sku: string | null; product_id: string | null; variant_id: string | null; quantity: number; unit_price_amount: number; line_total_amount: number }[]
   >`
     select id, title, sku, product_id, variant_id, quantity, unit_price_amount, line_total_amount
-    from medusastore.order_items where order_id = ${orderId}
+    from begnon.order_items where order_id = ${orderId}
   `;
 
   return {
@@ -175,7 +175,7 @@ export async function getOrderById(orderId: string): Promise<OrderDetail | null>
 export async function getOrderByNumber(orderNumber: string): Promise<OrderDetail | null> {
   const sql = getSql();
   const [order] = await sql<{ id: string }[]>`
-    select id from medusastore.orders where order_number = ${orderNumber}
+    select id from begnon.orders where order_number = ${orderNumber}
   `;
 
   return order ? getOrderById(order.id) : null;
@@ -184,14 +184,14 @@ export async function getOrderByNumber(orderNumber: string): Promise<OrderDetail
 export async function getOrderItemsForReorder(orderId: string) {
   const sql = getSql();
   return sql<{ variant_id: string | null; quantity: number }[]>`
-    select variant_id, quantity from medusastore.order_items where order_id = ${orderId} and variant_id is not null
+    select variant_id, quantity from begnon.order_items where order_id = ${orderId} and variant_id is not null
   `;
 }
 
 export async function cancelOrder(orderId: string, customerId: string) {
   const sql = getSql();
   const rows = await sql<{ id: string }[]>`
-    update medusastore.orders set status = 'cancelled'
+    update begnon.orders set status = 'cancelled'
     where id = ${orderId} and customer_id = ${customerId} and status in ('pending', 'confirmed')
     returning id
   `;
@@ -206,7 +206,7 @@ export async function updateOrderStatus(
 ) {
   const sql = getSql();
   await sql`
-    update medusastore.orders set
+    update begnon.orders set
       status = coalesce(${patch.status ?? null}, status),
       fulfillment_status = coalesce(${patch.fulfillmentStatus ?? null}, fulfillment_status)
     where id = ${orderId}

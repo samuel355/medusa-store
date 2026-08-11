@@ -10,7 +10,7 @@ export async function createPaymentForOrder(input: {
 }) {
   const sql = getSql();
   await sql`
-    insert into medusastore.payments (
+    insert into begnon.payments (
       order_id, customer_id, provider, provider_reference, access_code, authorization_url, amount, status
     ) values (
       ${input.orderId}, ${input.customerId ?? null}, 'paystack', ${input.reference},
@@ -29,7 +29,7 @@ export async function markPaymentPaidIfPending(reference: string, channel?: stri
   const sql = getSql();
 
   const rows = await sql<{ order_id: string | null; amount: number; customer_id: string | null }[]>`
-    update medusastore.payments set
+    update begnon.payments set
       status = 'paid',
       paid_at = now(),
       channel = coalesce(${channel ?? null}, channel)
@@ -42,7 +42,7 @@ export async function markPaymentPaidIfPending(reference: string, channel?: stri
   const payment = rows[0];
   if (payment.order_id) {
     await sql`
-      update medusastore.orders set
+      update begnon.orders set
         payment_status = 'paid',
         status = case when status = 'pending' then 'confirmed' else status end,
         fulfillment_status = case when fulfillment_status = 'not_fulfilled' then 'queued' else fulfillment_status end
@@ -61,7 +61,7 @@ export async function logPaystackEvent(input: {
 }) {
   const sql = getSql();
   await sql`
-    insert into medusastore.paystack_events (event, reference, order_id, payload, processed_at)
+    insert into begnon.paystack_events (event, reference, order_id, payload, processed_at)
     values (${input.event}, ${input.reference ?? null}, ${input.orderId ?? null}, ${JSON.stringify(input.payload)}, now())
   `;
 }

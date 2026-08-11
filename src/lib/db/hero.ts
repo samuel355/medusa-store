@@ -23,7 +23,7 @@ async function queryActiveHeroBanners(): Promise<HeroBanner[]> {
     }[]
   >`
     select id, title, subtitle, image_url, cta_label, cta_href
-    from medusastore.hero_banners
+    from begnon.hero_banners
     where is_active = true
     order by sort_order asc
   `;

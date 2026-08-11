@@ -105,7 +105,7 @@ module.exports = defineConfig({
   ],
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
-    databaseSchema: process.env.DATABASE_SCHEMA || "medusastore",
+    databaseSchema: process.env.DATABASE_SCHEMA || "begnon",
     // Knex's own default (min:2, max:10) queues the 11th+ concurrent
     // DB-touching request instead of erroring, but 10 is low headroom given
     // each request holds its connection for a while (Supabase is remote,

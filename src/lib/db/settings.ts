@@ -28,7 +28,7 @@ export async function getCustomerSettings(customerId: string): Promise<CustomerS
     }[]
   >`
     select sms_order_updates, email_receipts, back_in_stock_alerts, marketing_opt_in, preferred_payment_method
-    from medusastore.customer_settings where customer_id = ${customerId}
+    from begnon.customer_settings where customer_id = ${customerId}
   `;
 
   if (rows.length === 0) return DEFAULT_SETTINGS;
@@ -46,7 +46,7 @@ export async function getCustomerSettings(customerId: string): Promise<CustomerS
 export async function updateCustomerSettings(customerId: string, patch: Partial<CustomerSettings>) {
   const sql = getSql();
   await sql`
-    insert into medusastore.customer_settings (
+    insert into begnon.customer_settings (
       customer_id, sms_order_updates, email_receipts, back_in_stock_alerts, marketing_opt_in, preferred_payment_method
     ) values (
       ${customerId},
@@ -57,11 +57,11 @@ export async function updateCustomerSettings(customerId: string, patch: Partial<
       ${patch.preferredPaymentMethod ?? DEFAULT_SETTINGS.preferredPaymentMethod}
     )
     on conflict (customer_id) do update set
-      sms_order_updates = coalesce(${patch.smsOrderUpdates ?? null}, medusastore.customer_settings.sms_order_updates),
-      email_receipts = coalesce(${patch.emailReceipts ?? null}, medusastore.customer_settings.email_receipts),
-      back_in_stock_alerts = coalesce(${patch.backInStockAlerts ?? null}, medusastore.customer_settings.back_in_stock_alerts),
-      marketing_opt_in = coalesce(${patch.marketingOptIn ?? null}, medusastore.customer_settings.marketing_opt_in),
-      preferred_payment_method = coalesce(${patch.preferredPaymentMethod ?? null}, medusastore.customer_settings.preferred_payment_method),
+      sms_order_updates = coalesce(${patch.smsOrderUpdates ?? null}, begnon.customer_settings.sms_order_updates),
+      email_receipts = coalesce(${patch.emailReceipts ?? null}, begnon.customer_settings.email_receipts),
+      back_in_stock_alerts = coalesce(${patch.backInStockAlerts ?? null}, begnon.customer_settings.back_in_stock_alerts),
+      marketing_opt_in = coalesce(${patch.marketingOptIn ?? null}, begnon.customer_settings.marketing_opt_in),
+      preferred_payment_method = coalesce(${patch.preferredPaymentMethod ?? null}, begnon.customer_settings.preferred_payment_method),
       updated_at = now()
   `;
 }
