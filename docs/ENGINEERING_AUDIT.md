@@ -1,5 +1,38 @@
 # Engineering Audit
 
+## 2026-08-11 production-readiness pass (follow-up)
+
+Verified both apps actually build/typecheck/test clean, then closed the gaps
+that surfaced:
+
+- **Two more copies of the same `DATABASE_SCHEMA=medusastore` staleness**
+  found earlier in `render.yaml`: `apps/backend/.env.template` (the file new
+  engineers copy to set up their local backend env) and the root
+  `.env.example` (which also documented a `DATABASE_SCHEMA` var for the
+  storefront that `src/lib/db/client.ts` doesn't actually read — it hardcodes
+  `search_path=begnon` on the connection itself). Fixed both, and dropped the
+  unused `PAYSTACK_WEBHOOK_SECRET` line from the backend template to match
+  the render.yaml fix.
+- **No CI at all** — no `.github/workflows`, nothing gates a broken
+  build/lint/test before a push to `main` reaches the auto-deployed
+  Render/Vercel services. Added `.github/workflows/ci.yml`: typecheck, lint,
+  unit tests, and a full production build for both the storefront and the
+  Medusa backend, on every push and PR. Confirmed locally that both builds
+  succeed with no real secrets (placeholder env values only) — `next build`
+  needs the required vars to be present and syntactically valid, not to
+  point at a live backend; `medusa build` doesn't touch the database at all.
+- Fixed a pre-existing (unrelated to prior changes) `react/no-unescaped-entities`
+  lint error in `src/app/not-found.tsx` that would have made the new CI
+  lint step fail on the very first run.
+- **`apps/backend`'s own `lint` script is currently broken** (`medusa lint`
+  fails with "The 'jiti' library is required for loading TypeScript
+  configuration files"), independent of anything in this review. Left out of
+  the new CI workflow rather than papering over it with an unreviewed
+  dependency bump — worth its own fix.
+
+Both apps build clean, typecheck clean, and all existing tests (46
+storefront unit tests, 23 backend unit tests) pass.
+
 ## 2026-08-11 full-stack review
 
 Reviewed auth/middleware, checkout/payment/webhooks, the data access layer

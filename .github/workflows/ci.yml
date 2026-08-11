@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  storefront:
+    name: Storefront (typecheck, lint, test, build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24.16.0"
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run test:unit
+      # Build needs the required env vars to be present and syntactically
+      # valid (src/lib/env.ts throws on anything missing) - it does not need
+      # them to point at a real backend. Fetches to Medusa/Supabase during
+      # page-data collection fail gracefully (pages render dynamically), so
+      # placeholder values are enough to catch real compile/type regressions.
+      - run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: placeholder
+          SUPABASE_SERVICE_ROLE_KEY: placeholder
+          NEXT_PUBLIC_MEDUSA_BACKEND_URL: http://localhost:9000
+          NEXT_PUBLIC_MEDUSA_ADMIN_URL: http://localhost:9000/app/dashboard
+          NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: placeholder
+          NEXT_PUBLIC_MEDUSA_REGION_ID: placeholder
+          NEXT_PUBLIC_MEDUSA_CART_ENABLED: "true"
+          MEDUSA_CUSTOMER_LINK_SECRET: placeholder
+          DATABASE_URL: postgres://placeholder:placeholder@localhost:5432/placeholder
+          PAYSTACK_SECRET_KEY: placeholder
+          NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY: placeholder
+          ARKESEL_API_KEY: placeholder
+          REDIS_URL: redis://localhost:6379
+          R2_ACCOUNT_ID: placeholder
+          R2_ACCESS_KEY_ID: placeholder
+          R2_SECRET_ACCESS_KEY: placeholder
+          R2_BUCKET_NAME: placeholder
+          R2_PUBLIC_URL: https://placeholder.example.com
+          GOOGLE_CLIENT_ID: placeholder
+          GOOGLE_CLIENT_SECRET: placeholder
+
+  backend:
+    name: Medusa backend (typecheck, test, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24.16.0"
+          cache: npm
+          cache-dependency-path: apps/backend/package-lock.json
+      # --include=dev: ts-node is a devDependency but medusa-config.ts needs
+      # it to load even in an otherwise-production-like CI run (see
+      # scripts/ci-build.sh for the full explanation).
+      - run: npm ci --include=dev
+      - run: npx tsc --noEmit
+      - run: npx jest --silent --runInBand --forceExit --watchman=false
+        env:
+          TEST_TYPE: unit
+          NODE_OPTIONS: --experimental-vm-modules
+      # medusa build compiles without needing a live database connection -
+      # migrations run separately at deploy time, not at build time.
+      - run: npm run build
