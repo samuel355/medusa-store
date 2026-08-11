@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, CreditCard, LogIn, ShieldCheck, Smartphone, UserRound } from "lucide-react";
+import { CheckCircle2, CreditCard, Lock, LogIn, Smartphone, UserRound } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { type CartResponse } from "@/lib/utils/cart";
@@ -19,10 +19,10 @@ type CheckoutFlowProps = {
   medusa?: boolean;
 };
 
-const NETWORKS: { value: GhanaMobileMoneyProvider; label: string }[] = [
-  { value: "mtn", label: "MTN Mobile Money" },
-  { value: "vod", label: "Telecel Cash" },
-  { value: "atl", label: "AirtelTigo Money" },
+const NETWORKS: { value: GhanaMobileMoneyProvider; label: string; icon: string }[] = [
+  { value: "mtn", label: "MTN Mobile Money", icon: "/momo-icons/mtn.jpeg" },
+  { value: "vod", label: "Telecel Cash", icon: "/momo-icons/telecel.jpeg" },
+  { value: "atl", label: "AirtelTigo Money", icon: "/momo-icons/airtel.svg" },
 ];
 
 type ChargeState =
@@ -427,6 +427,19 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false }: Che
 
               {paymentMethod === "mobile_money" ? (
                 <div className="ed-checkout-form">
+                  <div className="ed-momo-networks" role="list" aria-label="Supported Mobile Money networks">
+                    {NETWORKS.map((network) => (
+                      <span
+                        role="listitem"
+                        key={network.value}
+                        className={`ed-momo-badge ${momoProvider === network.value ? "is-active" : ""}`}
+                        title={network.label}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element -- fixed-size local icon; the airtel mark is an SVG, which next/image's optimizer rejects locally without extra config */}
+                        <img src={network.icon} alt={network.label} />
+                      </span>
+                    ))}
+                  </div>
                   <label className="ed-buybox-field">
                     <span>Network</span>
                     <select value={momoProvider} onChange={(event) => setMomoProvider(event.target.value as GhanaMobileMoneyProvider)}>
@@ -485,10 +498,13 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false }: Che
                 </div>
               )}
 
-              <p className="ed-checkout-secure">
-                <ShieldCheck size={15} />
-                Secure payment
-              </p>
+              <div className="ed-checkout-secure">
+                <Lock size={16} />
+                <div>
+                  <strong>Secure checkout</strong>
+                  <span>Payments are encrypted and processed by Paystack — we never see or store your card or Mobile Money PIN.</span>
+                </div>
+              </div>
             </div>
           </>
         )}
