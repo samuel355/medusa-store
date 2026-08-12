@@ -79,6 +79,8 @@ services:
 
       - key: PLATFORM_ADMIN_PHONE
         sync: false
+      - key: PLATFORM_ADMIN_NAME
+        sync: false
       - key: PLATFORM_ADMIN_EMAIL
         sync: false
 

@@ -1,9 +1,9 @@
 "use client";
 
-import { AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2, X } from "lucide-react";
 
 type PaymentStatusModalProps = {
-  status: "confirming" | "success" | "error";
+  status: "opening" | "confirming" | "success" | "error";
   message: string;
   onDismiss?: () => void;
 };
@@ -12,7 +12,18 @@ export function PaymentStatusModal({ status, message, onDismiss }: PaymentStatus
   return (
     <div className="ed-payment-modal-backdrop" role="alertdialog" aria-modal="true" aria-live="assertive">
       <div className="ed-payment-modal">
-        {status === "confirming" ? (
+        {onDismiss ? (
+          <button className="ed-payment-modal-close" onClick={onDismiss} type="button" aria-label="Close">
+            <X size={18} />
+          </button>
+        ) : null}
+        {status === "opening" ? (
+          <>
+            <Loader2 size={32} className="spin" />
+            <h2>Opening payment portal</h2>
+            <p>{message}</p>
+          </>
+        ) : status === "confirming" ? (
           <>
             <Loader2 size={32} className="spin" />
             <h2>Confirming your payment</h2>

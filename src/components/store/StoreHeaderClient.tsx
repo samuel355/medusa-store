@@ -1,12 +1,14 @@
 "use client";
 
-import { Grid3X3, Heart, LayoutDashboard, ListFilter, LogOut, PackageCheck, Search, ShoppingBag, UserRound, X } from "lucide-react";
+import { ArrowRight, Grid3X3, Heart, LayoutDashboard, ListFilter, LogOut, PackageCheck, Search, ShoppingBag, UserRound, X } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { storeBrand } from "@/lib/store/brand";
 import { BrandMark } from "@/components/store/BrandMark";
 import { useCart } from "@/lib/medusa/cart";
+import { formatMoney } from "@/lib/utils/money";
 
 type StoreHeaderClientProps = {
   isSignedIn: boolean;
@@ -23,7 +25,9 @@ export function StoreHeaderClient({ isSignedIn, isAdmin, accountHref, displayNam
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpenMobile, setIsSearchOpenMobile] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const [isCartMenuOpen, setIsCartMenuOpen] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement>(null);
+  const cartMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isAccountMenuOpen) return;
@@ -42,6 +46,24 @@ export function StoreHeaderClient({ isSignedIn, isAdmin, accountHref, displayNam
       document.removeEventListener("keydown", handleEscape);
     };
   }, [isAccountMenuOpen]);
+
+  useEffect(() => {
+    if (!isCartMenuOpen) return;
+    function handlePointerDown(event: MouseEvent) {
+      if (cartMenuRef.current && !cartMenuRef.current.contains(event.target as Node)) {
+        setIsCartMenuOpen(false);
+      }
+    }
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setIsCartMenuOpen(false);
+    }
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isCartMenuOpen]);
 
   function search(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -145,10 +167,62 @@ export function StoreHeaderClient({ isSignedIn, isAdmin, accountHref, displayNam
           <Link href="/customers/wishlist" aria-label="Wishlist" title="Wishlist">
             <Heart size={18} />
           </Link>
-          <Link className="cart-button" href="/cart" aria-label={`Cart, ${cartCount} item${cartCount === 1 ? "" : "s"}`} title="Cart">
-            <ShoppingBag size={18} />
-            <span>{cartCount}</span>
-          </Link>
+          <div className="cart-menu" ref={cartMenuRef}>
+            <button
+              type="button"
+              className="cart-button"
+              aria-haspopup="true"
+              aria-expanded={isCartMenuOpen}
+              aria-label={`Cart, ${cartCount} item${cartCount === 1 ? "" : "s"}`}
+              title="Cart"
+              onClick={() => setIsCartMenuOpen((current) => !current)}
+            >
+              <ShoppingBag size={18} />
+              <span>{cartCount}</span>
+            </button>
+            {isCartMenuOpen ? (
+              <div className="cart-menu-dropdown" role="menu">
+                {cart.items.length > 0 ? (
+                  <>
+                    <ul className="cart-menu-items">
+                      {cart.items.map((item) => (
+                        <li key={item.id}>
+                          <span className="cart-menu-item-thumb">
+                            <Image src={item.image} alt={item.name} fill sizes="48px" />
+                          </span>
+                          <span className="cart-menu-item-info">
+                            <span className="cart-menu-item-name">{item.name}</span>
+                            <span className="cart-menu-item-meta">
+                              {[item.size, item.color].filter(Boolean).join(" · ") || " "}
+                            </span>
+                            <span className="cart-menu-item-qty">Qty {item.quantity}</span>
+                          </span>
+                          <span className="cart-menu-item-price">{formatMoney(item.lineTotal)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="cart-menu-summary">
+                      <span>Subtotal</span>
+                      <strong>{formatMoney(cart.totals.subtotal)}</strong>
+                    </div>
+                    <Link className="cart-menu-cta" href="/cart" role="menuitem" onClick={() => setIsCartMenuOpen(false)}>
+                      View cart
+                      <ArrowRight size={16} />
+                    </Link>
+                  </>
+                ) : (
+                  <div className="cart-menu-empty">
+                    <ShoppingBag size={22} />
+                    <p>No items in cart</p>
+                    <Link className="ed-text-link" href="/shop" role="menuitem" onClick={() => setIsCartMenuOpen(false)}>
+                      Continue shopping
+                      <ArrowRight size={16} />
+                    </Link>
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </div>
           <button
             className="icon-button mobile-menu"
             aria-expanded={isMenuOpen}

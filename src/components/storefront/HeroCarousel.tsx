@@ -40,15 +40,22 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
       }}
     >
       {slides.map((product, index) => (
-        <Image
+        <Link
           key={product.slug}
-          src={product.image}
-          alt={product.name}
-          fill
-          sizes="(max-width: 900px) 100vw, 62vw"
-          priority={index === 0}
-          className={`ed-hero-carousel-image ${index === active ? "is-active" : ""}`}
-        />
+          href={`/products/${product.slug}`}
+          aria-label={`View ${product.name}`}
+          className={`ed-hero-carousel-slide ${index === active ? "is-active" : ""}`}
+          tabIndex={index === active ? undefined : -1}
+        >
+          <Image
+            src={product.image}
+            alt={product.name}
+            fill
+            sizes="(max-width: 900px) 100vw, 62vw"
+            priority={index === 0}
+            className="ed-hero-carousel-image"
+          />
+        </Link>
       ))}
       <div className="ed-hero-feature-scrim" />
       <div className="ed-hero-feature-copy" key={current.slug}>

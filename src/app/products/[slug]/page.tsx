@@ -37,6 +37,7 @@ export default async function ProductDetailsPage({ params }: { params: Promise<{
     product.brand ? { label: "Brand", value: product.brand } : null,
     product.fit ? { label: "Fit", value: product.fit } : null,
     product.fabric ? { label: "Fabric", value: product.fabric } : null,
+    product.material ? { label: "Material", value: product.material } : null,
     product.care ? { label: "Care", value: product.care } : null,
     product.delivery ? { label: "Delivery", value: product.delivery } : null,
     product.warranty ? { label: "Warranty", value: product.warranty } : null,

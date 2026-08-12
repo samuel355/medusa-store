@@ -4,6 +4,11 @@ import { createCheckoutService, PAYSTACK_PROVIDER_ID } from "./service";
 
 const cart = { id: "cart_1", email: "buyer@example.com", items: [], shipping_methods: [], region_id: "reg_1" };
 
+const GHANA_OPTIONS = [
+  { id: "so_accra", type: { code: "same_day_accra" } },
+  { id: "so_nationwide", type: { code: "nationwide_dispatch" } },
+];
+
 test("prepares Ghana address and chooses a real shipping option", async () => {
   const calls: string[] = [];
   const sdk = { cart: {
@@ -12,8 +17,38 @@ test("prepares Ghana address and chooses a real shipping option", async () => {
     addShippingMethod: async (_id: string, body: { option_id: string }) => { calls.push(`shipping:${body.option_id}`); return { cart: { ...cart, shipping_methods: [{ id: "sm_1" }] } }; },
     complete: async () => ({ type: "order" as const, order: { id: "order_1" } }),
   }, fulfillment: { listCartOptions: async () => ({ shipping_options: [{ id: "so_1" }] }) }, payment: { initiatePaymentSession: async () => ({ payment_collection: { payment_sessions: [] } }) } } as never;
-  await createCheckoutService(sdk).prepare("cart_1", { email: "buyer@example.com", phone: "+233", address: "Accra" });
+  await createCheckoutService(sdk).prepare("cart_1", { email: "buyer@example.com", phone: "+233", address: "12 Ring Rd", city: "Accra", displayName: "Ama Owusu" });
   assert.deepEqual(calls, ["address:gh", "shipping:so_1"]);
+});
+
+test("Accra and Kumasi deliveries get different shipping options, not the same flat fee", async () => {
+  async function prepareFor(city: string) {
+    const calls: string[] = [];
+    const sdk = { cart: {
+      update: async (_id: string, body: { shipping_address?: { city?: string } }) => { calls.push(`city:${body.shipping_address?.city}`); return { cart }; },
+      retrieve: async () => ({ cart }),
+      addShippingMethod: async (_id: string, body: { option_id: string }) => { calls.push(`shipping:${body.option_id}`); return { cart: { ...cart, shipping_methods: [{ id: "sm_1", shipping_option_id: body.option_id }] } }; },
+    }, fulfillment: { listCartOptions: async () => ({ shipping_options: GHANA_OPTIONS }) }, payment: {} } as never;
+    await createCheckoutService(sdk).prepare("cart_1", { email: "buyer@example.com", phone: "+233", address: "12 Ring Rd", city, displayName: "Ama Owusu" });
+    return calls;
+  }
+
+  assert.deepEqual(await prepareFor("Accra"), ["city:Accra", "shipping:so_accra"]);
+  assert.deepEqual(await prepareFor("Kumasi"), ["city:Kumasi", "shipping:so_nationwide"]);
+  // Case-insensitive: what matters is that it's Accra, not exact casing.
+  assert.deepEqual(await prepareFor("accra"), ["city:accra", "shipping:so_accra"]);
+});
+
+test("re-preparing with a different city swaps the shipping method instead of keeping the old one", async () => {
+  const calls: string[] = [];
+  const cartWithAccraShipping = { ...cart, shipping_methods: [{ id: "sm_1", shipping_option_id: "so_accra" }] };
+  const sdk = { cart: {
+    update: async () => { calls.push("address"); return { cart: cartWithAccraShipping }; },
+    retrieve: async () => ({ cart: cartWithAccraShipping }),
+    addShippingMethod: async (_id: string, body: { option_id: string }) => { calls.push(`shipping:${body.option_id}`); return { cart: { ...cart, shipping_methods: [{ id: "sm_2", shipping_option_id: body.option_id }] } }; },
+  }, fulfillment: { listCartOptions: async () => ({ shipping_options: GHANA_OPTIONS }) }, payment: {} } as never;
+  await createCheckoutService(sdk).prepare("cart_1", { email: "buyer@example.com", phone: "+233", address: "12 Ring Rd", city: "Kumasi", displayName: "Ama Owusu" });
+  assert.deepEqual(calls, ["address", "shipping:so_nationwide"]);
 });
 
 test("initializes Paystack and completes only to a Medusa order", async () => {
@@ -63,5 +98,5 @@ test("passes Mobile Money details through and returns the popup access code like
 
 test("does not fake success when shipping is not configured", async () => {
   const sdk = { cart: { update: async () => ({ cart }), retrieve: async () => ({ cart }), addShippingMethod: async () => ({ cart }), complete: async () => ({}) }, fulfillment: { listCartOptions: async () => ({ shipping_options: [] }) }, payment: {} } as never;
-  await assert.rejects(() => createCheckoutService(sdk).prepare("cart_1", { email: "x@y.com", phone: "+233", address: "Accra" }), /No delivery option/);
+  await assert.rejects(() => createCheckoutService(sdk).prepare("cart_1", { email: "x@y.com", phone: "+233", address: "12 Ring Rd", city: "Accra", displayName: "Ama Owusu" }), /No delivery option/);
 });

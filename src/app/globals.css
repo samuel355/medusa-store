@@ -1246,6 +1246,26 @@ select:focus {
   box-shadow: 0 14px 30px rgba(249, 115, 22, 0.22);
 }
 
+.footer-newsletter button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.footer-newsletter-status {
+  max-width: 430px;
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.footer-newsletter-status.is-success {
+  color: #16a34a;
+}
+
+.footer-newsletter-status.is-error {
+  color: #d92d20;
+}
+
 .footer-column h3,
 .footer-column span,
 .footer-column a {
@@ -2624,11 +2644,172 @@ strong,
   height: 36px;
 }
 
+.cart-menu {
+  position: relative;
+}
+
 .cart-button {
   position: relative;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.cart-button:hover {
+  background: rgba(23, 19, 15, 0.06);
+}
+
+.cart-menu-dropdown {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  z-index: 40;
+  display: grid;
+  gap: 0.6rem;
+  width: 320px;
+  max-width: calc(100vw - 24px);
+  padding: 0.85rem;
+  border: 1px solid #f0e2d7;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 20px 45px rgba(23, 19, 15, 0.16);
+  animation: accountMenuIn 140ms ease;
+}
+
+.cart-menu-dropdown::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  right: 14px;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px 0 0 0;
+  background: #ffffff;
+  border-top: 1px solid #f0e2d7;
+  border-left: 1px solid #f0e2d7;
+  transform: rotate(45deg);
+}
+
+.cart-menu-items {
+  display: grid;
+  gap: 0.7rem;
+  max-height: 320px;
+  margin: 0;
+  padding: 0 0.1rem 0.6rem;
+  list-style: none;
+  overflow-y: auto;
+  border-bottom: 1px solid #f0e2d7;
+}
+
+.cart-menu-items li {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.cart-menu-item-thumb {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #f7f1ea;
+}
+
+.cart-menu-item-thumb img {
+  object-fit: cover;
+}
+
+.cart-menu-item-info {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.cart-menu-item-name {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.84rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cart-menu-item-meta,
+.cart-menu-item-qty {
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
+.cart-menu-item-price {
+  color: var(--text);
+  font-size: 0.84rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.cart-menu-summary {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  color: var(--text);
+  font-size: 0.86rem;
+}
+
+/* Higher specificity than .topbar-inner .nav-actions a (which forces every
+   nav-actions <a> into a centered 36x36 icon box) - this is a full-width
+   button, not an icon, and needs to win that cascade fight. */
+.topbar-inner .nav-actions .cart-menu-cta {
+  display: flex;
+  width: 100%;
+  height: auto;
+  align-items: center;
+  justify-content: center;
   gap: 0.4rem;
+  min-height: 42px;
+  border-radius: 10px;
+  background: var(--hot);
+  color: #fff;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.topbar-inner .nav-actions .cart-menu-cta:hover {
+  background: #d9550f;
+}
+
+.cart-menu-empty {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  padding: 1.4rem 0.5rem;
+  text-align: center;
+  color: var(--muted);
+}
+
+.cart-menu-empty p {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.topbar-inner .nav-actions .cart-menu-empty a {
+  display: inline-flex;
+  width: auto;
+  height: auto;
+  gap: 0.35rem;
+  color: var(--hot);
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 
 .account-menu {
@@ -2854,14 +3035,22 @@ strong,
   overflow: hidden;
 }
 
-.ed-hero-carousel-image {
-  object-fit: cover;
+.ed-hero-carousel-slide {
+  position: absolute;
+  inset: 0;
+  display: block;
   opacity: 0;
+  pointer-events: none;
   transition: opacity 900ms ease;
 }
 
-.ed-hero-carousel-image.is-active {
+.ed-hero-carousel-slide.is-active {
   opacity: 1;
+  pointer-events: auto;
+}
+
+.ed-hero-carousel-image {
+  object-fit: cover;
 }
 
 .ed-hero-feature-scrim {
@@ -4889,6 +5078,7 @@ strong,
   background: #ffffff;
   padding: 0.35rem 0.5rem;
   opacity: 0.5;
+  cursor: pointer;
   transition: opacity 150ms ease, transform 150ms ease, border-color 150ms ease;
 }
 
@@ -4904,6 +5094,10 @@ strong,
   border-color: var(--hot);
   transform: translateY(-1px);
   box-shadow: 0 4px 10px rgba(23, 19, 15, 0.18);
+}
+
+.ed-momo-badge:not(.is-active):hover {
+  opacity: 0.8;
 }
 
 .ed-checkout-secure {
@@ -4968,6 +5162,81 @@ strong,
   font-size: 0.88rem;
 }
 
+.ed-bag-summary-discount {
+  margin: 1.1rem 0;
+  padding: 1rem 0;
+  border-top: 1px solid rgba(23, 19, 15, 0.1);
+  border-bottom: 1px solid rgba(23, 19, 15, 0.1);
+}
+
+.ed-bag-summary-discount-form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.ed-bag-summary-discount-form input {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  padding: 0 0.75rem;
+  border: 1px solid rgba(23, 19, 15, 0.16);
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.ed-bag-summary-discount-form button {
+  flex-shrink: 0;
+  height: 40px;
+  padding: 0 0.9rem;
+  border: 1px solid rgba(23, 19, 15, 0.16);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ed-bag-summary-discount-form button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ed-bag-summary-discount-applied {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ed-bag-summary-discount-applied li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  background: #fff7ed;
+  color: var(--hot);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.ed-bag-summary-discount-applied button {
+  display: grid;
+  place-items: center;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.ed-bag-summary-discount .ed-field-error {
+  margin-top: 0.5rem;
+}
+
 @media (max-width: 900px) {
   .ed-checkout {
     grid-template-columns: 1fr;
@@ -4996,6 +5265,7 @@ strong,
 }
 
 .ed-payment-modal {
+  position: relative;
   display: grid;
   gap: 0.7rem;
   width: min(380px, 100%);
@@ -5004,6 +5274,26 @@ strong,
   border-radius: 4px;
   text-align: center;
   box-shadow: 0 24px 60px rgba(23, 19, 15, 0.25);
+}
+
+.ed-payment-modal-close {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.7rem;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.ed-payment-modal-close:hover {
+  background: rgba(23, 19, 15, 0.06);
+  color: var(--text);
 }
 
 .ed-payment-modal svg {

@@ -154,6 +154,7 @@ export function mapMedusaProduct(product: CatalogueProduct): StoreProduct {
     colors: optionValues(product, "color"),
     fit: (["Slim", "Regular", "Oversized", "Tailored"] as const).includes(metadata.fit as never) ? metadata.fit as StoreProduct["fit"] : "Regular",
     fabric: stringValue(metadata, "fabric"),
+    material: stringValue(metadata, "material"),
     gender: (["Men", "Women", "Unisex"] as const).includes(metadata.gender as never) ? metadata.gender as StoreProduct["gender"] : "Unisex",
     occasion: stringList(metadata, "occasion"),
     brand: stringValue(metadata, "brand"),

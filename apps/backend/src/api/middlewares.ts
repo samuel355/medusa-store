@@ -7,5 +7,10 @@ export default defineMiddlewares({
       method: ["POST"],
       middlewares: [authenticate("customer", ["bearer"])],
     },
+    {
+      matcher: "/store/customers/me/active-cart",
+      method: ["GET"],
+      middlewares: [authenticate("customer", ["bearer"])],
+    },
   ],
 })

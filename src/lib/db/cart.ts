@@ -18,10 +18,12 @@ export type CartWithItems = {
   id: string;
   customerId: string | null;
   items: CartLineItem[];
+  promoCodes: string[];
   totals: {
     quantity: number;
     subtotal: number;
     shipping: number;
+    discount: number;
     total: number;
   };
 };
@@ -145,7 +147,9 @@ export async function getCartWithItems(cartId: string): Promise<CartWithItems> {
     id: cartId,
     customerId: cart?.customer_id ?? null,
     items,
-    totals: { quantity, subtotal, shipping, total: subtotal + shipping },
+    // This legacy Supabase cart model has no promotions concept.
+    promoCodes: [],
+    totals: { quantity, subtotal, shipping, discount: 0, total: subtotal + shipping },
   };
 }
 

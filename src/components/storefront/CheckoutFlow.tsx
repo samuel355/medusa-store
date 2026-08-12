@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, CreditCard, Lock, LogIn, Smartphone, UserRound } from "lucide-react";
+import { CheckCircle2, CreditCard, Lock, LogIn, Smartphone, Tag, UserRound, X } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { type CartResponse } from "@/lib/utils/cart";
@@ -17,6 +17,10 @@ type CheckoutFlowProps = {
   isSignedIn: boolean;
   customer: { displayName: string; email: string; phone: string } | null;
   medusa?: boolean;
+  // Lets MedusaCheckoutLoader know a payment is being finalized, so it
+  // doesn't mistake the cart-clearing step for an abandoned/empty cart and
+  // bounce the browser to /cart before the confirmation redirect fires.
+  onCheckoutCompleting?: (completing: boolean) => void;
 };
 
 const NETWORKS: { value: GhanaMobileMoneyProvider; label: string; icon: string }[] = [
@@ -24,6 +28,11 @@ const NETWORKS: { value: GhanaMobileMoneyProvider; label: string; icon: string }
   { value: "vod", label: "Telecel Cash", icon: "/momo-icons/telecel.jpeg" },
   { value: "atl", label: "AirtelTigo Money", icon: "/momo-icons/airtel.svg" },
 ];
+
+// Same-day delivery only runs inside Accra; everywhere else in Ghana gets the
+// nationwide courier rate (see pickShippingOption in lib/medusa/checkout/service.ts,
+// which matches on exactly this "Accra" vs anything-else split).
+const DELIVERY_CITIES = ["Accra", "Kumasi", "Takoradi", "Tamale", "Cape Coast", "Tema", "Other"];
 
 type ChargeState =
   | { status: "idle" }
@@ -33,30 +42,60 @@ type ChargeState =
   | { status: "success"; orderNumber: string }
   | { status: "error"; message: string };
 
-export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false }: CheckoutFlowProps) {
+export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false, onCheckoutCompleting }: CheckoutFlowProps) {
   const [guestChosen, setGuestChosen] = useState(false);
+  const [fullName, setFullName] = useState(customer?.displayName ?? "");
   const [email, setEmail] = useState(customer?.email ?? "");
   const [phone, setPhone] = useState(customer?.phone ?? "");
   const [address, setAddress] = useState("");
+  const [city, setCity] = useState(DELIVERY_CITIES[0]);
   const [paymentMethod, setPaymentMethod] = useState<"mobile_money" | "card">("mobile_money");
   const [momoProvider, setMomoProvider] = useState<GhanaMobileMoneyProvider>("mtn");
   const [momoPhone, setMomoPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [charge, setCharge] = useState<ChargeState>({ status: "idle" });
-  const [touched, setTouched] = useState<Record<"email" | "phone" | "address" | "momoPhone", boolean>>({
+  const [touched, setTouched] = useState<Record<"fullName" | "email" | "phone" | "address" | "momoPhone", boolean>>({
+    fullName: false,
     email: false,
     phone: false,
     address: false,
     momoPhone: false,
   });
+  const [discountCode, setDiscountCode] = useState("");
+  const [discountError, setDiscountError] = useState("");
+  const [isApplyingDiscount, setIsApplyingDiscount] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const completingRef = useRef(false);
-  const { resetAfterCheckout } = useCart();
+  const { resetAfterCheckout, applyDiscountCode, removeDiscountCode } = useCart();
 
+  const fullNameValid = fullName.trim().length >= 2;
   const emailValid = useMemo(() => isValidEmail(email), [email]);
   const phoneValid = useMemo(() => isValidGhanaPhone(phone), [phone]);
   const momoPhoneValid = useMemo(() => isValidGhanaPhone(momoPhone), [momoPhone]);
   const addressValid = address.trim().length > 4;
+
+  async function applyDiscount() {
+    const code = discountCode.trim();
+    if (!code) return;
+    setIsApplyingDiscount(true);
+    setDiscountError("");
+    try {
+      await applyDiscountCode(code);
+      setDiscountCode("");
+    } catch (cause) {
+      setDiscountError(cause instanceof Error ? cause.message : "Unable to apply that code.");
+    } finally {
+      setIsApplyingDiscount(false);
+    }
+  }
+
+  async function removeDiscount(code: string) {
+    try {
+      await removeDiscountCode(code);
+    } catch {
+      // Best-effort - the applied-codes list simply stays as it was.
+    }
+  }
 
   function markTouched(field: keyof typeof touched) {
     setTouched((current) => ({ ...current, [field]: true }));
@@ -85,18 +124,6 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false }: Che
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [medusa, cart.id]);
 
-  // Best-effort: attaches this guest cart to the signed-in shopper's Medusa
-  // customer so the resulting order shows up in their dashboard order
-  // history later. Never blocks or surfaces errors to the payment UI.
-  useEffect(() => {
-    if (!medusa || !isSignedIn || !cart.id) return;
-    fetch("/api/medusa/attach-cart-customer", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cartId: cart.id }),
-    }).catch(() => {});
-  }, [medusa, isSignedIn, cart.id]);
-
   function pollForConfirmation(orderNumber: string) {
     let attempts = 0;
     pollRef.current = setInterval(async () => {
@@ -121,11 +148,18 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false }: Che
   }
 
   const showForm = isSignedIn || guestChosen;
-  const canSubmit = emailValid && phoneValid && addressValid;
+  const canSubmit = fullNameValid && emailValid && phoneValid && addressValid;
 
   async function confirmAndCompleteMedusa(cartId: string) {
     if (completingRef.current) return;
     completingRef.current = true;
+    // Must be set before resetAfterCheckout runs inside finalizeVerifiedCheckout
+    // below, not after - see the comment on MedusaCheckoutLoader for why.
+    // Deliberately not cleared on success: it stays true through the delayed
+    // redirect() below so the loader's empty-cart guard can't win that race
+    // either; only an actual failure clears it, since then the cart was never
+    // reset and still has its items.
+    onCheckoutCompleting?.(true);
     setCharge({ status: "awaiting_approval", reference: cartId, orderNumber: cartId, message: "Confirming your payment securely..." });
     try {
       const checkout = createCheckoutService(medusaSdk.store);
@@ -140,6 +174,9 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false }: Che
           setTimeout(() => { window.location.href = `/confirmations?order=${encodeURIComponent(orderId)}`; }, 700);
         },
       });
+    } catch (cause) {
+      onCheckoutCompleting?.(false);
+      throw cause;
     } finally {
       completingRef.current = false;
     }
@@ -148,7 +185,7 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false }: Che
   async function completeMedusaPayment(channel: "card" | "mobile_money") {
     if (!cart.id) throw new Error("Your cart is unavailable.");
     const checkout = createCheckoutService(medusaSdk.store);
-    const prepared = await checkout.prepare(cart.id, { email, phone, address, displayName: customer?.displayName });
+    const prepared = await checkout.prepare(cart.id, { email, phone, address, city, displayName: fullName });
     const callbackUrl = `${window.location.origin}/checkout?paystack_return=1`;
     const payment = await checkout.initiate(prepared, channel, callbackUrl, channel === "mobile_money" ? { provider: momoProvider, phone: momoPhone.trim() } : undefined);
     window.localStorage.setItem("begnon_pending_checkout_cart", cart.id);
@@ -167,7 +204,7 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false }: Che
 
   async function payWithMobileMoney() {
     if (!canSubmit || !momoPhoneValid) {
-      setTouched({ email: true, phone: true, address: true, momoPhone: true });
+      setTouched({ fullName: true, email: true, phone: true, address: true, momoPhone: true });
       return;
     }
 
@@ -269,7 +306,7 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false }: Che
 
   async function payWithCard() {
     if (!canSubmit) {
-      setTouched({ email: true, phone: true, address: true, momoPhone: touched.momoPhone });
+      setTouched({ fullName: true, email: true, phone: true, address: true, momoPhone: touched.momoPhone });
       return;
     }
 
@@ -332,8 +369,10 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false }: Che
 
   return (
     <>
-      {charge.status === "submitting" || charge.status === "awaiting_approval" ? (
-        <PaymentStatusModal status="confirming" message={charge.status === "awaiting_approval" ? charge.message : "Starting your payment..."} />
+      {charge.status === "submitting" ? (
+        <PaymentStatusModal status="opening" message="Please wait while we open Paystack's secure payment window..." />
+      ) : charge.status === "awaiting_approval" ? (
+        <PaymentStatusModal status="confirming" message={charge.message} />
       ) : charge.status === "success" ? (
         <PaymentStatusModal status="success" message="Redirecting you to your order confirmation..." />
       ) : charge.status === "error" ? (
@@ -375,6 +414,16 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false }: Che
               ) : null}
               <div className="ed-checkout-form">
                 <label className="ed-buybox-field">
+                  <span>Full name</span>
+                  <input
+                    value={fullName}
+                    onChange={(event) => setFullName(event.target.value)}
+                    onBlur={() => markTouched("fullName")}
+                    placeholder="e.g. Ama Owusu"
+                  />
+                  {touched.fullName && !fullNameValid ? <p className="ed-field-error">Enter your full name.</p> : null}
+                </label>
+                <label className="ed-buybox-field">
                   <span>Email</span>
                   <input
                     value={email}
@@ -401,9 +450,22 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false }: Che
                     value={address}
                     onChange={(event) => setAddress(event.target.value)}
                     onBlur={() => markTouched("address")}
-                    placeholder="Street, area, city"
+                    placeholder="Street, area, landmark"
                   />
                   {touched.address && !addressValid ? <p className="ed-field-error">Add a delivery address.</p> : null}
+                </label>
+                <label className="ed-buybox-field">
+                  <span>Delivery city</span>
+                  <select value={city} onChange={(event) => setCity(event.target.value)}>
+                    {DELIVERY_CITIES.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="ed-buybox-notice">
+                    {city === "Accra" ? "Same-day delivery inside Accra." : "Nationwide courier delivery outside Accra."}
+                  </p>
                 </label>
               </div>
             </div>
@@ -427,17 +489,21 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false }: Che
 
               {paymentMethod === "mobile_money" ? (
                 <div className="ed-checkout-form">
-                  <div className="ed-momo-networks" role="list" aria-label="Supported Mobile Money networks">
+                  <div className="ed-momo-networks" role="radiogroup" aria-label="Supported Mobile Money networks">
                     {NETWORKS.map((network) => (
-                      <span
-                        role="listitem"
+                      <button
+                        type="button"
+                        role="radio"
                         key={network.value}
                         className={`ed-momo-badge ${momoProvider === network.value ? "is-active" : ""}`}
                         title={network.label}
+                        aria-label={`Pay with ${network.label}`}
+                        aria-checked={momoProvider === network.value}
+                        onClick={() => setMomoProvider(network.value)}
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element -- fixed-size local icon; the airtel mark is an SVG, which next/image's optimizer rejects locally without extra config */}
                         <img src={network.icon} alt={network.label} />
-                      </span>
+                      </button>
                     ))}
                   </div>
                   <label className="ed-buybox-field">
@@ -527,15 +593,57 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false }: Che
             </div>
           ))}
         </div>
+
+        <div className="ed-bag-summary-discount">
+          {cart.promoCodes.length > 0 ? (
+            <ul className="ed-bag-summary-discount-applied">
+              {cart.promoCodes.map((code) => (
+                <li key={code}>
+                  <Tag size={14} />
+                  <span>{code}</span>
+                  <button type="button" aria-label={`Remove discount code ${code}`} onClick={() => removeDiscount(code)}>
+                    <X size={14} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="ed-bag-summary-discount-form">
+              <input
+                value={discountCode}
+                onChange={(event) => setDiscountCode(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    applyDiscount();
+                  }
+                }}
+                placeholder="Discount code"
+                aria-label="Discount code"
+              />
+              <button type="button" onClick={applyDiscount} disabled={isApplyingDiscount || !discountCode.trim()}>
+                {isApplyingDiscount ? "Applying..." : "Apply"}
+              </button>
+            </div>
+          )}
+          {discountError ? <p className="ed-field-error">{discountError}</p> : null}
+        </div>
+
         <div className="ed-bag-summary-lines">
           <div>
             <span>Subtotal</span>
             <span>{formatMoney(cart.totals.subtotal)}</span>
           </div>
           <div>
-            <span>Delivery</span>
+            <span>Delivery fee</span>
             <span>{formatMoney(cart.totals.shipping)}</span>
           </div>
+          {cart.totals.discount > 0 ? (
+            <div>
+              <span>Discount</span>
+              <span>-{formatMoney(cart.totals.discount)}</span>
+            </div>
+          ) : null}
           <div className="ed-bag-summary-total">
             <span>Total</span>
             <span>{formatMoney(cart.totals.total)}</span>

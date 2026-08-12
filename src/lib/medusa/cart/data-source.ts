@@ -1,5 +1,5 @@
 import type { CartResponse } from "@/lib/utils/cart";
-import type { CartDataSource } from "./controller";
+import type { CartDataSource, MergeItem } from "./controller";
 import { MedusaCartOperationError } from "./errors";
 
 const CART_ID_KEY = "begnon_medusa_cart_id";
@@ -10,6 +10,8 @@ export type MedusaCartService = {
   add(id: string, variantId: string, quantity: number): Promise<CartResponse>;
   update(id: string, itemId: string, quantity: number): Promise<CartResponse>;
   remove(id: string, itemId: string): Promise<CartResponse>;
+  applyDiscount(id: string, code: string): Promise<CartResponse>;
+  removeDiscount(id: string, code: string): Promise<CartResponse>;
 };
 
 // A cart left with a captured-but-uncancellable payment session 500s on every
@@ -86,5 +88,16 @@ export function createMedusaCartDataSource(
       }
     },
     reset: abandonForFreshCart,
+    adoptCart: async (targetCartId: string, mergeItems: MergeItem[]) => {
+      // Sequential, not parallel: line-item creation isn't safe to race
+      // against itself on the same cart (each call reads-then-writes the
+      // cart's item list).
+      for (const item of mergeItems) {
+        await service.add(targetCartId, item.variantId, item.quantity);
+      }
+      return accept(await service.retrieve(targetCartId));
+    },
+    applyDiscount: async (code: string) => accept(await service.applyDiscount(requireId(), code)),
+    removeDiscount: async (code: string) => accept(await service.removeDiscount(requireId(), code)),
   };
 }

@@ -34,13 +34,22 @@ export function mapMedusaCart(cart: HttpTypes.StoreCart): CartResponse {
     };
   });
 
+  const promoCodes = Array.isArray(cart.promotions)
+    ? cart.promotions.map((promotion) => promotion.code).filter((code): code is string => Boolean(code))
+    : [];
+
   return {
     id,
     items,
+    promoCodes,
     totals: {
       quantity: items.reduce((sum, item) => sum + item.quantity, 0),
       subtotal: requiredNumber(cart.subtotal, "cart.subtotal"),
       shipping: requiredNumber(cart.shipping_total, "cart.shipping_total"),
+      // Unlike the fields above, a cart legitimately has no discount applied
+      // most of the time - default to 0 instead of treating it as a contract
+      // violation the way a missing subtotal/shipping/total would be.
+      discount: typeof cart.discount_total === "number" && Number.isFinite(cart.discount_total) ? cart.discount_total : 0,
       total: requiredNumber(cart.total, "cart.total"),
     },
   };

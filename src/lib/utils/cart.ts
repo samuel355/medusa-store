@@ -16,6 +16,7 @@ export type CartTotals = {
   quantity: number;
   subtotal: number;
   shipping: number;
+  discount: number;
   total: number;
 };
 
@@ -23,11 +24,12 @@ export type CartResponse = {
   id: string | null;
   items: CartItem[];
   totals: CartTotals;
+  promoCodes: string[];
 };
 
 export const CART_UPDATED_EVENT = "begnon:cart-updated";
 
-const EMPTY_CART: CartResponse = { id: null, items: [], totals: { quantity: 0, subtotal: 0, shipping: 0, total: 0 } };
+const EMPTY_CART: CartResponse = { id: null, items: [], totals: { quantity: 0, subtotal: 0, shipping: 0, discount: 0, total: 0 }, promoCodes: [] };
 let activeCartRequest: Promise<CartResponse> | null = null;
 
 export async function fetchCart(): Promise<CartResponse> {

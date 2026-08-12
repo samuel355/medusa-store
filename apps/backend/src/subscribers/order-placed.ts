@@ -1,7 +1,8 @@
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import type { MedusaContainer } from "@medusajs/framework/types"
-import { money, sendNotifications } from "../lib/notify-helpers"
+import { money, sendNotifications, toAmount } from "../lib/notify-helpers"
 import { renderCtaButton, renderEmailShell, renderItemsTable, renderOrderSummary } from "../lib/email-template"
+import { ensureOrderNumber } from "../lib/order-number"
 
 type OrderPlacedEvent = { event: { data: { id: string } }; container: MedusaContainer }
 
@@ -24,16 +25,33 @@ export default async function orderPlacedHandler({ event, container }: OrderPlac
 
   const customerName = order.shipping_address?.first_name || "there"
   const currencyCode = order.currency_code ?? "GHS"
-  const total = money(order.total ?? 0, currencyCode)
-  const orderRef = `#${order.custom_display_id ?? order.display_id}`
+  const orderTotal = toAmount(order.total)
+  const total = money(orderTotal, currencyCode)
+  // completeCartWorkflow emits order.placed *before* the orderCreated hook
+  // that normally sets custom_display_id (see order-number.ts) - without
+  // this, the SMS/email would race that hook and usually lose, showing
+  // Medusa's raw numeric display_id instead of the alphanumeric order number
+  // customers are meant to track with. ensureOrderNumber generates it here
+  // if it isn't set yet, idempotently.
+  const orderNumber = await ensureOrderNumber(order.id, container).catch(() => order.custom_display_id ?? null)
+  const orderRef = `#${orderNumber ?? order.display_id}`
   const storeUrl = (process.env.PLUGIN_STORE_URL || "http://localhost:3000").replace(/\/$/, "")
-  const items = (order.items ?? []).filter((item) => item !== null).map((item) => ({
-    title: item.title ?? "Product",
-    quantity: item.quantity ?? 1,
-    unitPrice: item.unit_price ?? 0,
-    total: item.total ?? 0,
-    thumbnail: item.thumbnail,
-  }))
+  const adminName = (process.env.PLATFORM_ADMIN_NAME || "Admin").trim()
+  const items = (order.items ?? []).filter((item) => item !== null).map((item) => {
+    const quantity = toAmount(item.quantity, 1) || 1
+    const unitPrice = toAmount(item.unit_price)
+    // Some Medusa query paths populate unit_price but not the line's total
+    // (or vice versa) - derive whichever is missing from the other instead
+    // of letting it fall back to a bare 0.
+    const lineTotal = toAmount(item.total, unitPrice * quantity) || unitPrice * quantity
+    return {
+      title: item.title ?? "Product",
+      quantity,
+      unitPrice,
+      total: lineTotal,
+      thumbnail: item.thumbnail,
+    }
+  })
 
   const customerEmailHtml = renderEmailShell({
     preheader: `Your Begnon order ${orderRef} for ${total} has been placed.`,
@@ -42,10 +60,23 @@ export default async function orderPlacedHandler({ event, container }: OrderPlac
     bodyHtml:
       renderItemsTable(items, currencyCode) +
       renderOrderSummary(
-        { subtotal: order.subtotal ?? 0, shipping: order.shipping_total ?? 0, total: order.total ?? 0 },
+        { subtotal: toAmount(order.subtotal), shipping: toAmount(order.shipping_total), total: orderTotal },
         currencyCode,
       ) +
       renderCtaButton("Track your order", `${storeUrl}/tracking?order=${encodeURIComponent(order.id)}`),
+  })
+
+  const adminEmailHtml = renderEmailShell({
+    preheader: `${customerName} just placed order ${orderRef} for ${total}.`,
+    heading: `New order from ${customerName}! 🎉`,
+    intro: `Order ${orderRef} worth ${total} just came in. Here's the quick view — open the dashboard for fulfillment and payment details.`,
+    bodyHtml:
+      renderItemsTable(items, currencyCode) +
+      renderOrderSummary(
+        { subtotal: toAmount(order.subtotal), shipping: toAmount(order.shipping_total), total: orderTotal },
+        currencyCode,
+      ) +
+      renderCtaButton("Open dashboard", `${storeUrl}/admin`),
   })
 
   await sendNotifications(notificationService, logger, [
@@ -68,15 +99,15 @@ export default async function orderPlacedHandler({ event, container }: OrderPlac
       to: process.env.PLATFORM_ADMIN_PHONE,
       channel: "sms",
       template: "order-placed-platform",
-      data: { message: `New order ${orderRef} — ${total} from ${order.email ?? "a guest"}.` },
+      data: { message: `Hello Admin ${adminName}! ${customerName} just placed order ${orderRef} worth ${total} on Begnon. Check the dashboard for full details.` },
     } : null,
     process.env.PLATFORM_ADMIN_EMAIL ? {
       to: process.env.PLATFORM_ADMIN_EMAIL,
       channel: "email",
       template: "order-placed-platform",
       content: {
-        subject: `New order ${orderRef} — ${total}`,
-        html: `<p>New order ${orderRef} for <strong>${total}</strong> was placed by ${order.email ?? "a guest"}.</p>`,
+        subject: `🎉 New order ${orderRef} — ${total}`,
+        html: adminEmailHtml,
       },
     } : null,
   ])

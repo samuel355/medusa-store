@@ -28,6 +28,7 @@ export type StoreProduct = {
   colors: string[];
   fit: "Slim" | "Regular" | "Oversized" | "Tailored";
   fabric: string;
+  material: string;
   gender: "Men" | "Women" | "Unisex";
   occasion: string[];
   brand: string;

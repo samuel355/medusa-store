@@ -20,6 +20,8 @@ test("creates, retrieves, adds, updates and removes through the injected SDK", a
       calls.push(`remove:${id}:${lineId}`);
       return { id: lineId, object: "line-item", deleted: true, parent: rawCart } as HttpTypes.StoreLineItemDeleteResponse;
     },
+    addPromotions: async (id, body) => { calls.push(`addPromotions:${id}:${body.promo_codes.join(",")}`); return response; },
+    removePromotions: async (id, body) => { calls.push(`removePromotions:${id}:${body.promo_codes.join(",")}`); return response; },
   };
   const service = createCartService(sdk, "reg_1");
   await service.create();
@@ -42,6 +44,8 @@ test("retains typed contract errors for every cart response boundary", async () 
     createLineItem: async () => response,
     updateLineItem: async () => response,
     deleteLineItem: async () => ({ id: "item_1", object: "line-item", deleted: true, parent: malformed }) as HttpTypes.StoreLineItemDeleteResponse,
+    addPromotions: async () => response,
+    removePromotions: async () => response,
   };
   const service = createCartService(sdk, "reg_1");
   const operations = [
@@ -58,6 +62,7 @@ test("retains operation and cause for every Store API failure", async () => {
   const fail = async () => { throw cause; };
   const sdk: CartSdkBoundary = {
     create: fail, retrieve: fail, createLineItem: fail, updateLineItem: fail, deleteLineItem: fail,
+    addPromotions: fail, removePromotions: fail,
   };
   const service = createCartService(sdk, "reg_1");
   const operations: Array<[() => Promise<unknown>, string]> = [
@@ -65,8 +70,30 @@ test("retains operation and cause for every Store API failure", async () => {
     [() => service.add("cart_1", "variant_1", 1), "add line item"],
     [() => service.update("cart_1", "item_1", 2), "update line item"],
     [() => service.remove("cart_1", "item_1"), "remove line item"],
+    [() => service.applyDiscount("cart_1", "SAVE10"), "apply discount code"],
+    [() => service.removeDiscount("cart_1", "SAVE10"), "remove discount code"],
   ];
   for (const [operation, name] of operations) {
     await assert.rejects(operation(), (error) => error instanceof MedusaCartOperationError && error.operation === name && error.cause === cause);
   }
+});
+
+test("applies a discount code Medusa actually accepted, rejects one it silently ignored", async () => {
+  const cartWithPromo = { ...rawCart, promotions: [{ id: "promo_1", code: "SAVE10" }] };
+  const sdk: CartSdkBoundary = {
+    create: async () => ({ cart: rawCart }), retrieve: async () => ({ cart: rawCart }),
+    createLineItem: async () => ({ cart: rawCart }), updateLineItem: async () => ({ cart: rawCart }),
+    deleteLineItem: async () => ({ id: "item_1", object: "line-item", deleted: true, parent: rawCart }) as HttpTypes.StoreLineItemDeleteResponse,
+    // Medusa returns 200 with the cart unchanged for an unknown/expired code -
+    // it does not reject the request itself. "save10" (lowercase) exercises
+    // the case-insensitive match against the applied code.
+    addPromotions: async (_id, body) => ({ cart: body.promo_codes[0]?.toUpperCase() === "SAVE10" ? cartWithPromo : rawCart }),
+    removePromotions: async () => ({ cart: rawCart }),
+  };
+  const service = createCartService(sdk, "reg_1");
+
+  const applied = await service.applyDiscount("cart_1", "save10");
+  assert.deepEqual(applied.promoCodes, ["SAVE10"]);
+
+  await assert.rejects(service.applyDiscount("cart_1", "EXPIRED"), /isn't valid/);
 });

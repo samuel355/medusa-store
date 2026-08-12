@@ -11,6 +11,8 @@ export type CartSdkBoundary = {
   createLineItem(id: string, body: HttpTypes.StoreAddCartLineItem, query?: { fields: string }): Promise<HttpTypes.StoreCartResponse>;
   updateLineItem(id: string, lineId: string, body: HttpTypes.StoreUpdateCartLineItem, query?: { fields: string }): Promise<HttpTypes.StoreCartResponse>;
   deleteLineItem(id: string, lineId: string, query?: { fields: string }): Promise<HttpTypes.StoreLineItemDeleteResponse>;
+  addPromotions(id: string, body: HttpTypes.StoreCartAddPromotion, query?: { fields: string }): Promise<HttpTypes.StoreCartResponse>;
+  removePromotions(id: string, body: HttpTypes.StoreCartRemovePromotion, query?: { fields: string }): Promise<HttpTypes.StoreCartResponse>;
 };
 
 export function createCartService(sdk: CartSdkBoundary, regionId: string) {
@@ -40,5 +42,18 @@ export function createCartService(sdk: CartSdkBoundary, regionId: string) {
         throw new MedusaCartOperationError("remove line item", cause);
       }
     },
+    applyDiscount: async (id: string, code: string) => {
+      const cart = await run("apply discount code", () => sdk.addPromotions(id, { promo_codes: [code] }, CART_QUERY));
+      // Medusa returns 200 even for a code it didn't actually apply (unknown,
+      // expired, or not valid for this cart) - the only reliable signal is
+      // whether the code shows up in the cart's promotions afterward. Checked
+      // outside the try/catch above so this becomes a clear, expected message
+      // instead of a generic wrapped operation error.
+      const applied = cart.promoCodes.some((existing) => existing.toLowerCase() === code.trim().toLowerCase());
+      if (!applied) throw new Error("That code isn't valid or doesn't apply to your order.");
+      return cart;
+    },
+    removeDiscount: (id: string, code: string) =>
+      run("remove discount code", () => sdk.removePromotions(id, { promo_codes: [code] }, CART_QUERY)),
   };
 }

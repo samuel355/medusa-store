@@ -20,7 +20,18 @@ export type CheckoutSdkBoundary = {
 
 const CART_FIELDS = { fields: "+payment_collection.payment_sessions,*shipping_methods" };
 
-export type CheckoutDetails = { email: string; phone: string; address: string; displayName?: string };
+export type CheckoutDetails = { email: string; phone: string; address: string; city: string; displayName: string };
+
+// Matches the shipping option `type.code` values seeded in
+// initial-data-seed.ts - same-day delivery only makes sense inside Accra,
+// everywhere else in Ghana gets the flatter nationwide courier rate. Falls
+// back to whatever Medusa returns first if neither code is configured (e.g.
+// a store with only one shipping option), so this never blocks checkout.
+function pickShippingOption(options: HttpTypes.StoreCartShippingOptionWithServiceZone[], city: string): HttpTypes.StoreCartShippingOptionWithServiceZone {
+  const isAccra = /^accra$/i.test(city.trim());
+  const wantedCode = isAccra ? "same_day_accra" : "nationwide_dispatch";
+  return options.find((option) => option.type?.code === wantedCode) ?? options[0];
+}
 export type PaymentChannel = "card" | "mobile_money";
 export type MobileMoneyDetails = { provider: "mtn" | "vod" | "atl"; phone: string };
 
@@ -32,16 +43,21 @@ export function createCheckoutService(sdk: CheckoutSdkBoundary) {
 
   return {
     prepare: (cartId: string, details: CheckoutDetails) => run("prepare checkout", async () => {
-      const [firstName, ...rest] = (details.displayName || "Guest Customer").trim().split(/\s+/);
+      // The UI requires a full name before checkout can be submitted at all -
+      // this fallback only guards against a caller bypassing that (e.g. a
+      // future integration), not the normal path.
+      const [firstName, ...rest] = (details.displayName.trim() || "Guest Customer").split(/\s+/);
+      const city = details.city.trim() || "Accra";
       const { cart: addressed } = await sdk.cart.update(cartId, {
         email: details.email.trim(),
-        shipping_address: { first_name: firstName, last_name: rest.join(" ") || "Customer", phone: details.phone.trim(), address_1: details.address.trim(), city: "Accra", country_code: "gh" },
+        shipping_address: { first_name: firstName, last_name: rest.join(" ") || "Customer", phone: details.phone.trim(), address_1: details.address.trim(), city, country_code: "gh" },
       }, CART_FIELDS);
       const { shipping_options: options } = await sdk.fulfillment.listCartOptions({ cart_id: addressed.id });
       if (!options.length) throw new MedusaCheckoutError("select shipping", "No delivery option is configured for this Ghana cart.");
+      const option = pickShippingOption(options, city);
       const existing = addressed.shipping_methods?.[0];
-      if (existing) return (await sdk.cart.retrieve(cartId, CART_FIELDS)).cart;
-      return (await sdk.cart.addShippingMethod(cartId, { option_id: options[0].id }, CART_FIELDS)).cart;
+      if (existing?.shipping_option_id === option.id) return (await sdk.cart.retrieve(cartId, CART_FIELDS)).cart;
+      return (await sdk.cart.addShippingMethod(cartId, { option_id: option.id }, CART_FIELDS)).cart;
     }),
 
     initiate: (cart: HttpTypes.StoreCart, channel: PaymentChannel, callbackUrl: string, mobileMoney?: MobileMoneyDetails) => run("initialize payment", async () => {

@@ -2,6 +2,7 @@ import { Clock, Mail, MapPin, Phone, ShieldCheck, Smartphone, Truck } from "luci
 import Link from "next/link";
 import { storeBrand } from "@/lib/store/brand";
 import { BrandMark } from "@/components/store/BrandMark";
+import { NewsletterForm } from "@/components/store/NewsletterForm";
 
 export function StoreFooter() {
   return (
@@ -30,10 +31,7 @@ export function StoreFooter() {
         <div className="footer-newsletter">
           <p className="kicker">Fashion updates</p>
           <h2>New drops, sale alerts, and back-in-stock notices.</h2>
-          <form>
-            <input aria-label="Email for fashion updates" placeholder="Email address" type="email" />
-            <button>Join</button>
-          </form>
+          <NewsletterForm />
           <p>{storeBrand.tagline}</p>
         </div>
 

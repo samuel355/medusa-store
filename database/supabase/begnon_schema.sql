@@ -891,3 +891,21 @@ using (is_active = true);
 drop policy if exists "admins manage hero banners" on begnon.hero_banners;
 create policy "admins manage hero banners" on begnon.hero_banners for all
 using (begnon.is_admin()) with check (begnon.is_admin());
+
+-- Footer "new drops, sale alerts, back-in-stock" email signup. Written only
+-- via the app's own pooled Postgres connection (src/lib/db/newsletter.ts),
+-- same as phone_otp_codes - RLS is enabled with no public policies purely as
+-- defense in depth against ever exposing subscriber emails through the
+-- anon/authenticated PostgREST role.
+create table if not exists begnon.newsletter_subscribers (
+  id uuid primary key default gen_random_uuid(),
+  email text not null unique,
+  source text not null default 'footer',
+  subscribed_at timestamptz not null default now(),
+  unsubscribed_at timestamptz,
+  metadata jsonb not null default '{}'::jsonb
+);
+
+create index if not exists newsletter_subscribers_email_idx on begnon.newsletter_subscribers(email);
+
+alter table begnon.newsletter_subscribers enable row level security;

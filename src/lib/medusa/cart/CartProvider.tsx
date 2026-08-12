@@ -23,6 +23,8 @@ type CartContextValue = {
   updateCartItemQuantity(itemId: string, quantity: number): Promise<CartResponse>;
   removeCartItem(itemId: string): Promise<CartResponse>;
   resetAfterCheckout(): Promise<CartResponse>;
+  applyDiscountCode(code: string): Promise<CartResponse>;
+  removeDiscountCode(code: string): Promise<CartResponse>;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -31,7 +33,11 @@ export function createLegacyCartDataSource(): CartDataSource {
   return { initialize: legacyFetch, add: legacyAdd, update: legacyUpdate, remove: legacyRemove };
 }
 
-export function CartProvider({ children, controller: injectedController }: Readonly<{ children: React.ReactNode; controller?: CartController }>) {
+export function CartProvider({
+  children,
+  isSignedIn = false,
+  controller: injectedController,
+}: Readonly<{ children: React.ReactNode; isSignedIn?: boolean; controller?: CartController }>) {
   const controller = useMemo(() => injectedController ?? createCartController(
     isMedusaCartEnabled() ? createMedusaCartDataSource({
       getItem: (key) => window.localStorage.getItem(key),
@@ -47,12 +53,54 @@ export function CartProvider({ children, controller: injectedController }: Reado
     return () => { unsubscribe(); };
   }, [controller]);
 
+  // Runs once per mount, right after the local (device) cart finishes its
+  // first load, and only while signed in - reconciles this device's cart
+  // with whatever the customer's account already knows about, so a second
+  // device (or a fresh sign-in after guest browsing) recovers items instead
+  // of starting from an empty cart. Best-effort throughout: any failure just
+  // leaves this device on its own local cart, same as before this existed.
+  useEffect(() => {
+    if (!isSignedIn || state.isLoading) return;
+    let cancelled = false;
+
+    (async () => {
+      const response = await fetch("/api/medusa/recover-cart", { cache: "no-store" }).catch(() => null);
+      if (!response?.ok || cancelled) return;
+      const { cartId: remoteCartId } = (await response.json()) as { cartId: string | null };
+      if (cancelled) return;
+
+      if (remoteCartId && remoteCartId !== state.cart.id) {
+        const mergeItems = state.cart.items.map((item) => ({ variantId: item.variantId, quantity: item.quantity }));
+        await controller.adoptCart(remoteCartId, mergeItems).catch(() => {});
+        return;
+      }
+
+      if (!remoteCartId && state.cart.id && state.cart.items.length > 0) {
+        await fetch("/api/medusa/attach-cart-customer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cartId: state.cart.id }),
+        }).catch(() => {});
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // Deliberately excludes state.cart - it only needs the cart as it stood
+    // the moment the local load finished, not a re-run on every mutation
+    // this same sync can itself cause (adoptCart, attach-cart-customer).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSignedIn, state.isLoading, controller]);
+
   const value = useMemo<CartContextValue>(() => ({
     ...state,
     addToCart: controller.add,
     updateCartItemQuantity: controller.update,
     removeCartItem: controller.remove,
     resetAfterCheckout: controller.reset,
+    applyDiscountCode: controller.applyDiscountCode,
+    removeDiscountCode: controller.removeDiscountCode,
   }), [controller, state]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
