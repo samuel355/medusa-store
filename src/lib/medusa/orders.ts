@@ -19,6 +19,7 @@ export function mapMedusaOrder(order: HttpTypes.StoreOrder): OrderDetail {
       quantity,
       unitPrice,
       lineTotal,
+      thumbnail: item.thumbnail ?? null,
     };
   });
   const itemsSubtotal = items.reduce((sum, item) => sum + item.lineTotal, 0);
@@ -65,7 +66,7 @@ export function mapMedusaOrder(order: HttpTypes.StoreOrder): OrderDetail {
 export async function listMedusaOrdersForCustomer(token: string): Promise<OrderDetail[]> {
   const { medusaSdk } = await import("./sdk");
   const { orders } = await medusaSdk.store.order.list(
-    { fields: "+payment_status,+fulfillment_status,+custom_display_id,+subtotal,+shipping_total,+discount_total,*items,items.product_id,*shipping_address", limit: 50, order: "-created_at" },
+    { fields: "+payment_status,+fulfillment_status,+custom_display_id,+subtotal,+shipping_total,+discount_total,*items,items.product_id,items.thumbnail,*shipping_address", limit: 50, order: "-created_at" },
     { Authorization: `Bearer ${token}` },
   );
   return orders.map(mapMedusaOrder);
@@ -82,7 +83,7 @@ export async function getMedusaOrderById(orderId: string): Promise<OrderDetail |
   const id = `order_${match[1]}`;
   try {
     const { medusaSdk } = await import("./sdk");
-    const { order } = await medusaSdk.store.order.retrieve(id, { fields: "+payment_status,+fulfillment_status,+custom_display_id,+subtotal,+shipping_total,+discount_total,*items,items.product_id,*shipping_address" });
+    const { order } = await medusaSdk.store.order.retrieve(id, { fields: "+payment_status,+fulfillment_status,+custom_display_id,+subtotal,+shipping_total,+discount_total,*items,items.product_id,items.thumbnail,*shipping_address" });
     return mapMedusaOrder(order);
   } catch {
     return null;

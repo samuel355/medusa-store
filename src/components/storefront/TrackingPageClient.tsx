@@ -1,6 +1,7 @@
 "use client";
 
 import { MapPin, Package, PackageCheck, Search, Star, Truck } from "lucide-react";
+import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { fetchOrderByNumber, trackOrder, type OrderDetail } from "@/lib/utils/orders";
@@ -116,6 +117,18 @@ function buildTimeline(order: OrderDetail) {
   ];
 }
 
+function TrackingLoadingSkeleton() {
+  return (
+    <section className="ed-track-skeleton" aria-busy="true" aria-label="Loading tracking details">
+      <div className="skeleton-card ed-track-skeleton-timeline" />
+      <div className="ed-track-skeleton-details">
+        <div className="skeleton-card ed-track-skeleton-panel" />
+        <div className="skeleton-card ed-track-skeleton-panel" />
+      </div>
+    </section>
+  );
+}
+
 export function TrackingPageClient() {
   const searchParams = useSearchParams();
   const requestedOrder = searchParams.get("order") ?? "";
@@ -176,7 +189,9 @@ export function TrackingPageClient() {
 
       {message ? <p className="ed-notice">{message}</p> : null}
 
-      {!isLoading && order ? (
+      {isLoading ? (
+        <TrackingLoadingSkeleton />
+      ) : order ? (
         <section className="ed-track-grid">
           <div className="ed-track-timeline">
             <div className="ed-track-timeline-head">
@@ -228,7 +243,15 @@ export function TrackingPageClient() {
               <h3>Items in this order</h3>
               {order.items.map((item) => (
                 <div className="ed-track-item-row" key={item.id}>
-                  <Package size={16} />
+                  {item.thumbnail ? (
+                    <span className="ed-track-item-image">
+                      <Image src={item.thumbnail} alt={item.title} fill sizes="48px" />
+                    </span>
+                  ) : (
+                    <span className="ed-track-item-image ed-track-item-image-empty">
+                      <Package size={18} />
+                    </span>
+                  )}
                   <div>
                     <strong>{item.title}</strong>
                     <span>Qty {item.quantity}</span>
@@ -240,12 +263,12 @@ export function TrackingPageClient() {
             </div>
           </div>
         </section>
-      ) : !isLoading ? (
+      ) : (
         <section className="ed-empty">
           <h2>Enter an order number to see tracking.</h2>
           <p>You can find your order number in your order history or confirmation email.</p>
         </section>
-      ) : null}
+      )}
     </>
   );
 }

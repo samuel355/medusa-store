@@ -20,7 +20,7 @@ export type OrderDetail = OrderSummary & {
   shippingAddress: Record<string, unknown>;
   subtotal: number;
   shipping: number;
-  items: { id: string; productId: string | null; title: string; sku: string; variantId: string | null; quantity: number; unitPrice: number; lineTotal: number }[];
+  items: { id: string; productId: string | null; title: string; sku: string; variantId: string | null; quantity: number; unitPrice: number; lineTotal: number; thumbnail?: string | null }[];
 };
 
 function generateOrderNumber() {
