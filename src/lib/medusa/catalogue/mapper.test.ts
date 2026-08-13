@@ -54,6 +54,20 @@ test("maps a Medusa product to the existing storefront contract", () => {
   assert.deepEqual(product.occasion, ["Casual", "Work"]);
 });
 
+test("reads material from Medusa's native product attribute, not just metadata", () => {
+  const fixture = productFixture();
+  (fixture as HttpTypes.StoreProduct & { material?: string | null }).material = "Cotton";
+  assert.equal(mapMedusaProduct(fixture).material, "Cotton");
+});
+
+test("falls back to metadata.material when the native attribute isn't set, and is empty when neither is", () => {
+  const withMetadataOnly = productFixture();
+  withMetadataOnly.metadata = { ...withMetadataOnly.metadata, material: "Wool" };
+  assert.equal(mapMedusaProduct(withMetadataOnly).material, "Wool");
+
+  assert.equal(mapMedusaProduct(productFixture()).material, "");
+});
+
 test("selects the storefront category independently of API category order", () => {
   const fixture = productFixture();
   const men = { id: "pcat_men", name: "Men", handle: "men", parent_category_id: null } as unknown as HttpTypes.StoreProductCategory;

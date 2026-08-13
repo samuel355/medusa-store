@@ -154,7 +154,10 @@ export function mapMedusaProduct(product: CatalogueProduct): StoreProduct {
     colors: optionValues(product, "color"),
     fit: (["Slim", "Regular", "Oversized", "Tailored"] as const).includes(metadata.fit as never) ? metadata.fit as StoreProduct["fit"] : "Regular",
     fabric: stringValue(metadata, "fabric"),
-    material: stringValue(metadata, "material"),
+    // Medusa's own "Material" product attribute (set via Admin -> Organize)
+    // takes priority - metadata.material only exists as a fallback for
+    // products that had it set that way before this field was wired up.
+    material: product.material?.trim() || stringValue(metadata, "material"),
     gender: (["Men", "Women", "Unisex"] as const).includes(metadata.gender as never) ? metadata.gender as StoreProduct["gender"] : "Unisex",
     occasion: stringList(metadata, "occasion"),
     brand: stringValue(metadata, "brand"),
