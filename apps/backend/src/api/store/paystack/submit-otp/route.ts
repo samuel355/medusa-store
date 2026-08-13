@@ -64,7 +64,13 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       body: JSON.stringify({ otp, reference }),
     })
     const payload = (await response.json()) as { status: boolean; message?: string; data?: { status?: string; display_text?: string; reference?: string } }
-    if (!response.ok || !payload.status) {
+    // Mirrors the proven legacy implementation
+    // (src/app/api/paystack/charge/submit-otp/route.ts): Paystack's
+    // top-level `status` boolean is not a reliable success/failure signal
+    // here either - only a genuine HTTP-level failure or a missing `data`
+    // payload counts as an error. The real state lives in `data.status`,
+    // which the caller inspects.
+    if (!response.ok || !payload.data) {
       res.status(400).json({ message: payload.message || "That code didn't work. Please try again." })
       return
     }

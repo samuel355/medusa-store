@@ -54,14 +54,26 @@ export default class PaystackPaymentService extends AbstractPaymentProvider<Pays
     this.fetch_ = fetcher
   }
 
-  private async request<T>(operation: string, path: string, init?: RequestInit): Promise<T> {
+  // Paystack's top-level `status` boolean means "this endpoint call is
+  // conclusively successful" for /transaction/initialize and
+  // /transaction/verify - but for /charge it can legitimately be `false`
+  // (with a message like "Charge attempted") while a perfectly normal,
+  // in-progress charge is represented by `data.status`
+  // (send_otp/pending/pay_offline/...). The proven legacy implementation
+  // (src/lib/integrations/paystack.ts) never checked the top-level boolean
+  // at all, only response.ok - callers that pass requireSuccessFlag: false
+  // mirror that and rely on `data` (and its own `.status` field) instead.
+  private async request<T>(operation: string, path: string, init?: RequestInit, options?: { requireSuccessFlag?: boolean }): Promise<T> {
     try {
       const response = await this.fetch_(`${this.baseUrl_}${path}`, {
         ...init,
         headers: { Authorization: `Bearer ${this.secretKey_}`, "Content-Type": "application/json", ...init?.headers },
       })
       const payload = await response.json() as PaystackResponse<T>
-      if (!response.ok || !payload.status) throw new Error(payload.message || `HTTP ${response.status}`)
+      const requireSuccessFlag = options?.requireSuccessFlag ?? true
+      if (!response.ok || payload.data === undefined || payload.data === null || (requireSuccessFlag && !payload.status)) {
+        throw new Error(payload.message || `HTTP ${response.status}`)
+      }
       return payload.data
     } catch (cause) {
       if (cause instanceof PaystackProviderError) throw cause
@@ -99,7 +111,7 @@ export default class PaystackPaymentService extends AbstractPaymentProvider<Pays
             mobile_money: { phone: mobileMoney!.phone, provider: mobileMoney!.provider },
             metadata: { ...(input.data?.metadata as object ?? {}), medusa_session_id: sessionId },
           }),
-        })
+        }, { requireSuccessFlag: false })
       : this.request<PaystackTransaction>("initialize", "/transaction/initialize", {
           method: "POST",
           body: JSON.stringify({
