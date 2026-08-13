@@ -33,7 +33,7 @@ const NETWORKS: { value: GhanaMobileMoneyProvider; label: string; icon: string }
 // Same-day delivery only runs inside Accra; everywhere else in Ghana gets the
 // nationwide courier rate (see pickShippingOption in lib/medusa/checkout/service.ts,
 // which matches on exactly this "Accra" vs anything-else split).
-const DELIVERY_CITIES = ["Accra", "Kumasi", "Takoradi", "Tamale", "Cape Coast", "Tema", "Other"];
+const DELIVERY_CITIES = ["Accra", "Kumasi", "Takoradi", "Tamale", "Cape Coast", "Tema"];
 
 type ChargeState =
   | { status: "idle" }
