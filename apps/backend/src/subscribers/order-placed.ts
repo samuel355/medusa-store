@@ -6,36 +6,14 @@ import { ensureOrderNumber } from "../lib/order-number"
 
 type OrderPlacedEvent = { event: { data: { id: string } }; container: MedusaContainer }
 
-export default async function orderPlacedHandler({ event, container }: OrderPlacedEvent) {
-  const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
-  const query = container.resolve(ContainerRegistrationKeys.QUERY)
-  const notificationService = container.resolve(Modules.NOTIFICATION)
+const ORDER_FIELDS = [
+  "id", "display_id", "custom_display_id", "email", "currency_code", "total", "subtotal", "shipping_total", "discount_total",
+  "shipping_address.phone", "shipping_address.first_name",
+  "items.title", "items.quantity", "items.unit_price", "items.total", "items.thumbnail",
+]
 
-  const { data: orders } = await query.graph({
-    entity: "order",
-    fields: [
-      "id", "display_id", "custom_display_id", "email", "currency_code", "total", "subtotal", "shipping_total", "discount_total",
-      "shipping_address.phone", "shipping_address.first_name",
-      "items.title", "items.quantity", "items.unit_price", "items.total", "items.thumbnail",
-    ],
-    filters: { id: event.data.id },
-  })
-  const order = orders[0]
-  if (!order) return
-
-  const customerName = order.shipping_address?.first_name || "there"
-  const currencyCode = order.currency_code ?? "GHS"
-  // completeCartWorkflow emits order.placed *before* the orderCreated hook
-  // that normally sets custom_display_id (see order-number.ts) - without
-  // this, the SMS/email would race that hook and usually lose, showing
-  // Medusa's raw numeric display_id instead of the alphanumeric order number
-  // customers are meant to track with. ensureOrderNumber generates it here
-  // if it isn't set yet, idempotently.
-  const orderNumber = await ensureOrderNumber(order.id, container).catch(() => order.custom_display_id ?? null)
-  const orderRef = `#${orderNumber ?? order.display_id}`
-  const storeUrl = (process.env.PLUGIN_STORE_URL || "http://localhost:3000").replace(/\/$/, "")
-  const adminName = (process.env.PLATFORM_ADMIN_NAME || "Admin").trim()
-  const items = (order.items ?? []).filter((item) => item !== null).map((item) => {
+function deriveItems(order: { items?: Array<Record<string, unknown> | null> | null }) {
+  return (order.items ?? []).filter((item): item is Record<string, unknown> => item !== null).map((item) => {
     const quantity = toAmount(item.quantity, 1) || 1
     const unitPrice = toAmount(item.unit_price)
     // Some Medusa query paths populate unit_price but not the line's total
@@ -43,24 +21,66 @@ export default async function orderPlacedHandler({ event, container }: OrderPlac
     // of letting it fall back to a bare 0.
     const lineTotal = toAmount(item.total, unitPrice * quantity) || unitPrice * quantity
     return {
-      title: item.title ?? "Product",
+      title: (item.title as string | undefined) ?? "Product",
       quantity,
       unitPrice,
       total: lineTotal,
-      thumbnail: item.thumbnail,
+      thumbnail: item.thumbnail as string | undefined,
     }
   })
+}
 
-  const itemsSubtotal = items.reduce((sum, item) => sum + item.total, 0)
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
+
+export default async function orderPlacedHandler({ event, container }: OrderPlacedEvent) {
+  const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
+  const query = container.resolve(ContainerRegistrationKeys.QUERY)
+  const notificationService = container.resolve(Modules.NOTIFICATION)
+
+  const fetchOrder = async () => {
+    const { data: orders } = await query.graph({ entity: "order", fields: ORDER_FIELDS, filters: { id: event.data.id } })
+    return orders[0]
+  }
+
+  let order = await fetchOrder()
+  if (!order) return
+  let items = deriveItems(order)
+  let itemsSubtotal = items.reduce((sum, item) => sum + item.total, 0)
+
+  // completeCartWorkflow emits order.placed *before* its later totals- and
+  // item-aggregation steps finish - a read this early can catch line items
+  // whose quantity hasn't been written yet (observed live: a quantity-2 item
+  // read back as quantity 1, undercounting the SMS/email total by exactly
+  // that item's unit price). Re-read until two consecutive reads agree on
+  // the item subtotal, so the notification only ever goes out once the
+  // order has stopped changing underneath us, not on a fixed guessed delay.
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await sleep(1500)
+    const next = await fetchOrder()
+    if (!next) break
+    const nextItems = deriveItems(next)
+    const nextSubtotal = nextItems.reduce((sum, item) => sum + item.total, 0)
+    const stable = nextSubtotal === itemsSubtotal && nextItems.length === items.length
+    order = next
+    items = nextItems
+    itemsSubtotal = nextSubtotal
+    if (stable) break
+  }
+
+  const customerName = order.shipping_address?.first_name || "there"
+  const currencyCode = order.currency_code ?? "GHS"
+  // Same early-read race as above can also leave custom_display_id unset -
+  // ensureOrderNumber generates it here idempotently if it still isn't set.
+  const orderNumber = await ensureOrderNumber(order.id, container).catch(() => order.custom_display_id ?? null)
+  const orderRef = `#${orderNumber ?? order.display_id}`
+  const storeUrl = (process.env.PLUGIN_STORE_URL || "http://localhost:3000").replace(/\/$/, "")
+  const adminName = (process.env.PLATFORM_ADMIN_NAME || "Admin").trim()
+
   const shipping = toAmount(order.shipping_total)
   const discount = toAmount(order.discount_total)
-  // order.total (and order.subtotal) can still be mid-computation this early
-  // in completeCartWorkflow - order.placed fires before the workflow's later
-  // totals-aggregation steps, and a stale/partial total (observed: exactly
-  // the shipping fee, as if items hadn't been folded in yet) undercharges
-  // what the customer/admin are told they got. Trust whichever is larger:
-  // Medusa's own total should only ever be >= what's independently verifiable
-  // from the line items and shipping fee (e.g. + tax), never less.
+  // Even after the stabilization loop above, trust whichever is larger
+  // between Medusa's own total and what's independently derivable from the
+  // (now-stabilized) line items and shipping fee - it should never be less.
   const orderTotal = Math.max(toAmount(order.total), Math.max(0, itemsSubtotal + shipping - discount))
   const subtotal = Math.max(toAmount(order.subtotal), itemsSubtotal)
   const total = money(orderTotal, currencyCode)
