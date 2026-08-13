@@ -186,7 +186,7 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false, onChe
     onCheckoutCompleting?.(true);
     setCharge({ status: "awaiting_approval", reference: cartId, orderNumber: cartId, message: "Confirming your payment securely..." });
     try {
-      const checkout = createCheckoutService(medusaSdk.store);
+      const checkout = createCheckoutService({ ...medusaSdk.store, client: medusaSdk.client });
       await finalizeVerifiedCheckout({
         cartId,
         waitUntilPaid: checkout.waitUntilPaid,
@@ -206,12 +206,15 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false, onChe
     }
   }
 
-  async function completeMedusaPayment(channel: "card" | "mobile_money") {
+  // Card always goes through Paystack's own popup (Standard Checkout) - card
+  // details must never touch this storefront, only Paystack's PCI-compliant
+  // hosted UI.
+  async function completeMedusaCardPayment() {
     if (!cart.id) throw new Error("Your cart is unavailable.");
-    const checkout = createCheckoutService(medusaSdk.store);
+    const checkout = createCheckoutService({ ...medusaSdk.store, client: medusaSdk.client });
     const prepared = await checkout.prepare(cart.id, { email, phone, address, city, displayName: fullName });
     const callbackUrl = `${window.location.origin}/checkout?paystack_return=1`;
-    const payment = await checkout.initiate(prepared, channel, callbackUrl, channel === "mobile_money" ? { provider: momoProvider, phone: momoPhone.trim() } : undefined);
+    const payment = await checkout.initiate(prepared, "card", callbackUrl);
     window.localStorage.setItem("begnon_pending_checkout_cart", cart.id);
     if (payment.accessCode) {
       const { default: PaystackPop } = await import("@paystack/inline-js");
@@ -226,6 +229,29 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false, onChe
     confirmAndCompleteMedusa(cart.id).catch((cause) => setCharge({ status: "error", message: cause instanceof Error ? cause.message : "Payment confirmation is pending." }));
   }
 
+  // Mobile money charges the chosen network + number directly (Paystack
+  // Direct Charge) - no popup ever opens. See initiatePayment's
+  // isDirectMobileMoneyCharge branch in paystack-payment/service.ts.
+  async function completeMedusaMobileMoneyPayment() {
+    if (!cart.id) throw new Error("Your cart is unavailable.");
+    const checkout = createCheckoutService({ ...medusaSdk.store, client: medusaSdk.client });
+    const prepared = await checkout.prepare(cart.id, { email, phone, address, city, displayName: fullName });
+    const callbackUrl = `${window.location.origin}/checkout?paystack_return=1`;
+    const payment = await checkout.initiate(prepared, "mobile_money", callbackUrl, { provider: momoProvider, phone: momoPhone.trim() });
+    window.localStorage.setItem("begnon_pending_checkout_cart", cart.id);
+
+    if (payment.chargeStatus === "send_otp" && payment.chargeReference) {
+      setCharge({ status: "awaiting_otp", reference: payment.chargeReference, orderNumber: cart.id, message: payment.displayText ?? "Enter the OTP sent to your phone." });
+      return;
+    }
+    // "pending" (approval prompt on the phone, e.g. Vodafone Cash), "success"
+    // (rare - some networks skip OTP), or anything else: let waitUntilPaid's
+    // own live re-verification against Paystack be the actual source of
+    // truth, same as every other payment path here.
+    setCharge({ status: "awaiting_approval", reference: payment.chargeReference ?? cart.id, orderNumber: cart.id, message: payment.displayText ?? "Approve the payment prompt on your phone. We will complete the order only after Paystack is verified." });
+    confirmAndCompleteMedusa(cart.id).catch((cause) => setCharge({ status: "error", message: cause instanceof Error ? cause.message : "Payment confirmation is pending." }));
+  }
+
   async function payWithMobileMoney() {
     if (!canSubmit || !momoPhoneValid) {
       setTouched({ fullName: true, email: true, phone: true, address: true, momoPhone: true });
@@ -235,7 +261,7 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false, onChe
     setCharge({ status: "submitting" });
 
     if (medusa) {
-      try { await completeMedusaPayment("mobile_money"); } catch (cause) { setCharge({ status: "error", message: cause instanceof Error ? cause.message : "Unable to start checkout." }); }
+      try { await completeMedusaMobileMoneyPayment(); } catch (cause) { setCharge({ status: "error", message: cause instanceof Error ? cause.message : "Unable to start checkout." }); }
       return;
     }
 
@@ -297,6 +323,18 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false, onChe
 
     setCharge({ status: "submitting" });
 
+    if (medusa) {
+      try {
+        const checkout = createCheckoutService({ ...medusaSdk.store, client: medusaSdk.client });
+        const result = await checkout.submitMobileMoneyOtp(otp.trim(), reference);
+        setCharge({ status: "awaiting_approval", reference, orderNumber, message: result.displayText ?? "Confirming with your network..." });
+        confirmAndCompleteMedusa(orderNumber).catch((cause) => setCharge({ status: "error", message: cause instanceof Error ? cause.message : "Payment confirmation is pending." }));
+      } catch (cause) {
+        setCharge({ status: "error", message: cause instanceof Error ? cause.message : "That OTP did not work. Please try again." });
+      }
+      return;
+    }
+
     try {
       const response = await fetch("/api/paystack/charge/submit-otp", {
         method: "POST",
@@ -337,7 +375,7 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false, onChe
     setCharge({ status: "submitting" });
 
     if (medusa) {
-      try { await completeMedusaPayment("card"); } catch (cause) { setCharge({ status: "error", message: cause instanceof Error ? cause.message : "Unable to start checkout." }); }
+      try { await completeMedusaCardPayment(); } catch (cause) { setCharge({ status: "error", message: cause instanceof Error ? cause.message : "Unable to start checkout." }); }
       return;
     }
 
@@ -394,7 +432,14 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false, onChe
   return (
     <>
       {charge.status === "submitting" ? (
-        <PaymentStatusModal status="opening" message="Please wait while we open Paystack's secure payment window..." />
+        <PaymentStatusModal
+          status="opening"
+          message={
+            !medusa || paymentMethod === "card"
+              ? "Please wait while we open Paystack's secure payment window..."
+              : "Please wait while we charge your Mobile Money number..."
+          }
+        />
       ) : charge.status === "awaiting_approval" ? (
         <PaymentStatusModal status="confirming" message={charge.message} />
       ) : charge.status === "success" ? (
@@ -592,7 +637,7 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false, onChe
                 <Lock size={16} />
                 <div>
                   <strong>Secure checkout</strong>
-                  <span>Payments are encrypted and processed by Paystack — we never see or store your card or Mobile Money PIN.</span>
+                  <span>Payments are encrypted and processed by Paystack. We never see or store your card or Mobile Money PIN.</span>
                 </div>
               </div>
             </div>

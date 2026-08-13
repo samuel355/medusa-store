@@ -20,7 +20,7 @@ export function PaymentStatusModal({ status, message, onDismiss }: PaymentStatus
         {status === "opening" ? (
           <>
             <Loader2 size={32} className="spin" />
-            <h2>Opening payment portal</h2>
+            <h2>Starting your payment</h2>
             <p>{message}</p>
           </>
         ) : status === "confirming" ? (

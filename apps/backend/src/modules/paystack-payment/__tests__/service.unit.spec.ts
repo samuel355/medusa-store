@@ -9,13 +9,41 @@ describe("PaystackPaymentService", () => {
     expect(() => new PaystackPaymentService({}, { secretKey: "" })).toThrow(PaystackProviderError)
   })
 
-  test("initializes in minor units and stores the Medusa session mapping", async () => {
+  test("initializes card checkout via Standard Checkout, never Direct Charge", async () => {
     const fetcher = jest.fn().mockImplementation(() => response({ reference: "ref_1", status: "pending", access_code: "access" }))
     const service = new PaystackPaymentService({}, { secretKey }, fetcher)
-    const result = await service.initiatePayment({ amount: 125.5, currency_code: "ghs", data: { email: "buyer@example.com" }, context: { idempotency_key: "payses_1" } })
+    const result = await service.initiatePayment({ amount: 125.5, currency_code: "ghs", data: { email: "buyer@example.com", channels: ["card"] }, context: { idempotency_key: "payses_1" } })
     expect(result).toMatchObject({ id: "ref_1", status: "pending" })
+    expect(fetcher.mock.calls[0][0]).toContain("/transaction/initialize")
     const body = JSON.parse(fetcher.mock.calls[0][1].body)
     expect(body).toMatchObject({ amount: 12550, currency: "GHS", metadata: { medusa_session_id: "payses_1" } })
+  })
+
+  test("charges mobile money directly (no popup) when only that channel is requested with a network and number", async () => {
+    const fetcher = jest.fn().mockImplementation(() => response({ reference: "ref_mm", status: "send_otp", display_text: "Enter the OTP sent to your phone." }))
+    const service = new PaystackPaymentService({}, { secretKey }, fetcher)
+    const result = await service.initiatePayment({
+      amount: 55, currency_code: "ghs",
+      data: { email: "buyer@example.com", channels: ["mobile_money"], mobile_money: { provider: "mtn", phone: "0240000000" } },
+      context: { idempotency_key: "payses_mm" },
+    })
+    expect(result).toMatchObject({ id: "ref_mm", status: "pending" })
+    expect((result.data as Record<string, unknown>).status).toBe("send_otp")
+    expect(fetcher.mock.calls[0][0]).toContain("/charge")
+    expect(fetcher.mock.calls[0][0]).not.toContain("/transaction/initialize")
+    const body = JSON.parse(fetcher.mock.calls[0][1].body)
+    expect(body).toMatchObject({ amount: 5500, currency: "GHS", mobile_money: { provider: "mtn", phone: "0240000000" }, metadata: { medusa_session_id: "payses_mm" } })
+  })
+
+  test("falls back to Standard Checkout for mobile money without a network/number, or a mixed-channel request", async () => {
+    const fetcher = jest.fn().mockImplementation(() => response({ reference: "ref_fallback", status: "pending", access_code: "access" }))
+    const service = new PaystackPaymentService({}, { secretKey }, fetcher)
+
+    await service.initiatePayment({ amount: 10, currency_code: "ghs", data: { email: "buyer@example.com", channels: ["mobile_money"] }, context: { idempotency_key: "payses_no_number" } })
+    expect(fetcher.mock.calls[0][0]).toContain("/transaction/initialize")
+
+    await service.initiatePayment({ amount: 10, currency_code: "ghs", data: { email: "buyer@example.com", channels: ["card", "mobile_money"], mobile_money: { provider: "mtn", phone: "0240000000" } }, context: { idempotency_key: "payses_mixed" } })
+    expect(fetcher.mock.calls[1][0]).toContain("/transaction/initialize")
   })
 
   test("deduplicates repeated initialization for the same Medusa idempotency key", async () => {

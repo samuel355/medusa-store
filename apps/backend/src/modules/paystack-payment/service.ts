@@ -75,16 +75,42 @@ export default class PaystackPaymentService extends AbstractPaymentProvider<Pays
     const callbackUrl = input.data?.callback_url
     const existing = this.initializations_.get(sessionId)
     if (existing) return existing
-    const initialization = this.request<PaystackTransaction>("initialize", "/transaction/initialize", {
-      method: "POST",
-      body: JSON.stringify({
-        email, amount: Math.round(number(input.amount) * 100), currency: input.currency_code.toUpperCase(),
-        reference: input.context?.idempotency_key,
-        callback_url: typeof callbackUrl === "string" ? callbackUrl : undefined,
-        channels: input.data?.channels,
-        metadata: { ...(input.data?.metadata as object ?? {}), mobile_money: input.data?.mobile_money, medusa_session_id: sessionId },
-      }),
-    }).then((transaction) => ({ id: transaction.reference, status: "pending" as const, data: transaction as unknown as Record<string, unknown> }))
+    const reference = input.context?.idempotency_key
+    const amount = Math.round(number(input.amount) * 100)
+    const currency = input.currency_code.toUpperCase()
+    const channels = input.data?.channels
+    const mobileMoney = input.data?.mobile_money as { provider?: string; phone?: string } | undefined
+
+    // Mobile money uses Paystack's Direct Charge API (/charge) instead of
+    // Standard Checkout (/transaction/initialize) - it charges the given
+    // network/number directly, no popup, only when *only* mobile_money is
+    // requested and a network + number were actually provided. Card (and
+    // any mixed-channel request) keeps using Standard Checkout, since card
+    // details must stay inside Paystack's own PCI-compliant popup, never
+    // collected by this storefront.
+    const isDirectMobileMoneyCharge = Array.isArray(channels) && channels.length === 1 && channels[0] === "mobile_money"
+      && typeof mobileMoney?.provider === "string" && typeof mobileMoney?.phone === "string" && mobileMoney.phone.trim()
+
+    const request = isDirectMobileMoneyCharge
+      ? this.request<PaystackTransaction>("charge", "/charge", {
+          method: "POST",
+          body: JSON.stringify({
+            email, amount, currency, reference,
+            mobile_money: { phone: mobileMoney!.phone, provider: mobileMoney!.provider },
+            metadata: { ...(input.data?.metadata as object ?? {}), medusa_session_id: sessionId },
+          }),
+        })
+      : this.request<PaystackTransaction>("initialize", "/transaction/initialize", {
+          method: "POST",
+          body: JSON.stringify({
+            email, amount, currency, reference,
+            callback_url: typeof callbackUrl === "string" ? callbackUrl : undefined,
+            channels,
+            metadata: { ...(input.data?.metadata as object ?? {}), mobile_money: mobileMoney, medusa_session_id: sessionId },
+          }),
+        })
+
+    const initialization = request.then((transaction) => ({ id: transaction.reference, status: "pending" as const, data: transaction as unknown as Record<string, unknown> }))
     this.initializations_.set(sessionId, initialization)
     try { return await initialization }
     catch (cause) { this.initializations_.delete(sessionId); throw cause }

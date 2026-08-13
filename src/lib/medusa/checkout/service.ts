@@ -16,6 +16,9 @@ export type CheckoutSdkBoundary = {
   payment: {
     initiatePaymentSession(cart: HttpTypes.StoreCart, body: HttpTypes.StoreInitializePaymentSession, query?: { fields: string }): Promise<HttpTypes.StorePaymentCollectionResponse>;
   };
+  client: {
+    fetch<T>(path: string, init?: { method?: string; body?: unknown }): Promise<T>;
+  };
 };
 
 const CART_FIELDS = { fields: "+payment_collection.payment_sessions,*shipping_methods" };
@@ -73,14 +76,37 @@ export function createCheckoutService(sdk: CheckoutSdkBoundary) {
       }, { fields: "*payment_sessions" });
       const session = response.payment_collection.payment_sessions?.find((candidate) => candidate.provider_id === PAYSTACK_PROVIDER_ID);
       if (!session) throw new MedusaCheckoutError("initialize payment", "Medusa did not return the Paystack payment session.");
-      // Standard Checkout (`/transaction/initialize`, used for both channels) always
-      // returns an access code/authorization URL, never a synchronous charge status like
-      // "send_otp" — that status only exists on Paystack's separate Direct Charge API,
-      // which this provider does not call. Paystack's own popup/hosted page collects the
-      // Mobile Money network, number, and any OTP/approval step itself; no extra action
-      // is required here for either channel.
-      return { cart, session, accessCode: typeof session.data?.access_code === "string" ? session.data.access_code : null, authorizationUrl: typeof session.data?.authorization_url === "string" ? session.data.authorization_url : null };
+      const data = session.data ?? {};
+      // Card (or any request that isn't mobile-money-only) always goes through
+      // Standard Checkout, which returns an access code/authorization URL for
+      // Paystack's own popup/hosted page - card details never touch this
+      // storefront. Mobile money with a network + number goes through Direct
+      // Charge instead (see paystack-payment/service.ts's initiatePayment),
+      // which returns a synchronous status ("send_otp"/"pending"/"success"/...)
+      // and never opens a popup at all.
+      return {
+        cart, session,
+        accessCode: typeof data.access_code === "string" ? data.access_code : null,
+        authorizationUrl: typeof data.authorization_url === "string" ? data.authorization_url : null,
+        chargeStatus: typeof data.status === "string" ? data.status : null,
+        chargeReference: typeof data.reference === "string" ? data.reference : null,
+        displayText: typeof data.display_text === "string" ? data.display_text : null,
+      };
     }),
+
+    // Completes a mobile money Direct Charge after Paystack texts the
+    // customer an OTP (session.chargeStatus === "send_otp" from initiate()
+    // above). This only resolves the *payment session* at Paystack - the
+    // caller still must call complete()/waitUntilPaid(), which live-verifies
+    // the transaction via Medusa's own authorizePaymentSessionStep rather
+    // than trusting this response, so a forged/guessed OTP can only fail or
+    // succeed the charge already tied to that reference, never fabricate an
+    // order on its own.
+    submitMobileMoneyOtp: (otp: string, reference: string) => run("submit otp", () =>
+      sdk.client.fetch<{ status: string; reference: string; displayText?: string }>("/store/paystack/submit-otp", {
+        method: "POST",
+        body: { otp, reference },
+      })),
 
     retrievePaymentState: (cartId: string) => run("verify payment", async () => {
       const { cart } = await sdk.cart.retrieve(cartId, CART_FIELDS);

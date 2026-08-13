@@ -109,6 +109,29 @@ test("passes Mobile Money details through and returns the popup access code like
   assert.deepEqual((body?.data as Record<string, unknown>).mobile_money, { provider: "mtn", phone: "0240000000" });
 });
 
+test("surfaces the Direct Charge status/reference/display text for mobile money, with no access code or popup", async () => {
+  const momoSession = { id: "payses_2", provider_id: PAYSTACK_PROVIDER_ID, data: { status: "send_otp", reference: "chg_1", display_text: "Enter the OTP sent to your phone." } };
+  const sdk = { cart: { retrieve: async () => ({ cart }), update: async () => ({ cart }), addShippingMethod: async () => ({ cart }), complete: async () => ({}) }, fulfillment: { listCartOptions: async () => ({ shipping_options: [] }) }, payment: { initiatePaymentSession: async () => ({ payment_collection: { payment_sessions: [momoSession] } }) }, client: { fetch: async () => ({}) } } as never;
+  const result = await createCheckoutService(sdk).initiate(cart as never, "mobile_money", "https://shop.test/checkout", { provider: "mtn", phone: "0240000000" });
+  assert.equal(result.accessCode, null);
+  assert.equal(result.authorizationUrl, null);
+  assert.equal(result.chargeStatus, "send_otp");
+  assert.equal(result.chargeReference, "chg_1");
+  assert.equal(result.displayText, "Enter the OTP sent to your phone.");
+});
+
+test("submitMobileMoneyOtp posts to the custom store route and surfaces the response", async () => {
+  let received: { path?: string; init?: unknown } = {};
+  const sdk = {
+    cart: {}, fulfillment: {}, payment: {},
+    client: { fetch: async (path: string, init: unknown) => { received = { path, init }; return { status: "success", reference: "chg_1", displayText: "Payment approved." }; } },
+  } as never;
+  const result = await createCheckoutService(sdk).submitMobileMoneyOtp("123456", "chg_1");
+  assert.equal(result.status, "success");
+  assert.equal(received.path, "/store/paystack/submit-otp");
+  assert.deepEqual((received.init as { method?: string; body?: unknown })?.body, { otp: "123456", reference: "chg_1" });
+});
+
 test("does not fake success when shipping is not configured", async () => {
   const sdk = { cart: { update: async () => ({ cart }), retrieve: async () => ({ cart }), addShippingMethod: async () => ({ cart }), complete: async () => ({}) }, fulfillment: { listCartOptions: async () => ({ shipping_options: [] }) }, payment: {} } as never;
   await assert.rejects(() => createCheckoutService(sdk).prepare("cart_1", { email: "x@y.com", phone: "+233", address: "12 Ring Rd", city: "Accra", displayName: "Ama Owusu" }), /No delivery option/);
