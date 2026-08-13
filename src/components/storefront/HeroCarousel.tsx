@@ -58,15 +58,15 @@ export function HeroCarousel({ slides }: HeroCarouselProps) {
         </Link>
       ))}
       <div className="ed-hero-feature-scrim" />
-      <div className="ed-hero-feature-copy" key={current.slug}>
+      <Link className="ed-hero-feature-copy" href={`/products/${current.slug}`} aria-label={`View ${current.name}`} key={current.slug}>
         <p>{current.badge || current.category || "New this week"}</p>
         <h1>{current.name}</h1>
         <span className="ed-hero-feature-price">{formatMoney(current.price)}</span>
-        <Link className="ed-text-link ed-hero-cta" href={`/products/${current.slug}`}>
+        <span className="ed-text-link ed-hero-cta">
           Shop now
           <ArrowRight size={16} />
-        </Link>
-      </div>
+        </span>
+      </Link>
       {slides.length > 1 ? (
         <div className="ed-hero-carousel-dots">
           {slides.map((product, index) => (

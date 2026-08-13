@@ -5,12 +5,13 @@ import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { type CartResponse } from "@/lib/utils/cart";
 import { medusaSdk } from "@/lib/medusa/sdk";
-import { createCheckoutService, finalizeVerifiedCheckout } from "@/lib/medusa/checkout";
+import { createCheckoutService, finalizeVerifiedCheckout, pickShippingOption } from "@/lib/medusa/checkout";
 import { useCart } from "@/lib/medusa/cart/CartProvider";
 import { formatMoney } from "@/lib/utils/money";
 import { isValidEmail, isValidGhanaPhone } from "@/lib/utils/validation";
 import { PaymentStatusModal } from "@/components/storefront/PaymentStatusModal";
 import type { GhanaMobileMoneyProvider } from "@/lib/integrations/paystack";
+import type { HttpTypes } from "@medusajs/types";
 
 type CheckoutFlowProps = {
   cart: CartResponse;
@@ -64,6 +65,7 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false, onChe
   const [discountCode, setDiscountCode] = useState("");
   const [discountError, setDiscountError] = useState("");
   const [isApplyingDiscount, setIsApplyingDiscount] = useState(false);
+  const [shippingOptions, setShippingOptions] = useState<HttpTypes.StoreCartShippingOptionWithServiceZone[]>([]);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const completingRef = useRef(false);
   const { resetAfterCheckout, applyDiscountCode, removeDiscountCode } = useCart();
@@ -113,6 +115,28 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false, onChe
     if (!medusa) return;
     import("@paystack/inline-js").catch(() => {});
   }, [medusa]);
+
+  // The cart itself has no shipping method (and so $0 shipping_total) until
+  // checkout.prepare() runs at the moment "Pay" is clicked - fetched once so
+  // the order summary can preview the real fee for the selected city instead
+  // of showing GH₵0 the whole time the customer is choosing a city.
+  useEffect(() => {
+    if (!medusa || !cart.id) return;
+    let cancelled = false;
+    medusaSdk.store.fulfillment
+      .listCartOptions({ cart_id: cart.id, fields: "+type.code" })
+      .then(({ shipping_options }) => {
+        if (!cancelled) setShippingOptions(shipping_options);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [medusa, cart.id]);
+
+  const previewedShipping = shippingOptions.length ? pickShippingOption(shippingOptions, city).amount : null;
+  const displayedShipping = previewedShipping ?? cart.totals.shipping;
+  const displayedTotal = cart.totals.subtotal + displayedShipping - cart.totals.discount;
 
   useEffect(() => {
     if (!medusa || !cart.id || typeof window === "undefined") return;
@@ -546,7 +570,7 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false, onChe
                       onClick={payWithMobileMoney}
                     >
                       <Smartphone size={16} />
-                      Pay {formatMoney(cart.totals.total)}
+                      Pay {formatMoney(displayedTotal)}
                     </button>
                   )}
                 </div>
@@ -636,7 +660,7 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false, onChe
           </div>
           <div>
             <span>Delivery fee</span>
-            <span>{formatMoney(cart.totals.shipping)}</span>
+            <span>{formatMoney(displayedShipping)}</span>
           </div>
           {cart.totals.discount > 0 ? (
             <div>
@@ -646,7 +670,7 @@ export function CheckoutFlow({ cart, isSignedIn, customer, medusa = false, onChe
           ) : null}
           <div className="ed-bag-summary-total">
             <span>Total</span>
-            <span>{formatMoney(cart.totals.total)}</span>
+            <span>{formatMoney(displayedTotal)}</span>
           </div>
         </div>
       </aside>

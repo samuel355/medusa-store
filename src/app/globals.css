@@ -3073,6 +3073,7 @@ strong,
   padding: 2.6rem 2.6rem 2.4rem;
   margin: 0 0 1rem 1rem;
   color: #fdfaf6;
+  cursor: pointer;
 }
 
 .ed-hero-feature-copy p {

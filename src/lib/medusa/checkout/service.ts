@@ -27,7 +27,9 @@ export type CheckoutDetails = { email: string; phone: string; address: string; c
 // everywhere else in Ghana gets the flatter nationwide courier rate. Falls
 // back to whatever Medusa returns first if neither code is configured (e.g.
 // a store with only one shipping option), so this never blocks checkout.
-function pickShippingOption(options: HttpTypes.StoreCartShippingOptionWithServiceZone[], city: string): HttpTypes.StoreCartShippingOptionWithServiceZone {
+// Exported so the checkout UI can preview the fee for the selected city
+// before prepare() actually attaches a shipping method to the cart.
+export function pickShippingOption(options: HttpTypes.StoreCartShippingOptionWithServiceZone[], city: string): HttpTypes.StoreCartShippingOptionWithServiceZone {
   const isAccra = /^accra$/i.test(city.trim());
   const wantedCode = isAccra ? "same_day_accra" : "nationwide_dispatch";
   return options.find((option) => option.type?.code === wantedCode) ?? options[0];
