@@ -63,21 +63,28 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       headers: { Authorization: `Bearer ${secretKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({ otp, reference }),
     })
-    const payload = (await response.json()) as { status: boolean; message?: string; data?: { status?: string; display_text?: string; reference?: string } }
-    // Mirrors the proven legacy implementation
-    // (src/app/api/paystack/charge/submit-otp/route.ts): Paystack's
-    // top-level `status` boolean is not a reliable success/failure signal
-    // here either - only a genuine HTTP-level failure or a missing `data`
-    // payload counts as an error. The real state lives in `data.status`,
-    // which the caller inspects.
-    if (!response.ok || !payload.data) {
+    const payload = (await response.json()) as { status: boolean; message?: string; data?: { status?: string; display_text?: string; reference?: string; message?: string } }
+    // Neither the HTTP status nor the top-level `status`/`message` fields
+    // are reliable here (confirmed against the live Paystack sandbox for
+    // the sibling /charge endpoint: both can reflect a non-2xx/false
+    // "status" for a perfectly normal outcome, and the top-level message is
+    // a fixed generic string). The real state - and, on a genuine failure,
+    // the real reason - lives on `data`/`data.message`. This mirrors the
+    // proven legacy implementation
+    // (src/app/api/paystack/charge/submit-otp/route.ts), which only ever
+    // inspected `data.status`.
+    if (!payload.data) {
       res.status(400).json({ message: payload.message || "That code didn't work. Please try again." })
       return
     }
+    if (payload.data.status === "failed" || payload.data.status === "abandoned") {
+      res.status(400).json({ message: payload.data.message || "That code didn't work. Please try again." })
+      return
+    }
     res.status(200).json({
-      status: payload.data?.status ?? "pending",
-      reference: payload.data?.reference ?? reference,
-      displayText: payload.data?.display_text,
+      status: payload.data.status ?? "pending",
+      reference: payload.data.reference ?? reference,
+      displayText: payload.data.display_text,
     })
   } catch {
     res.status(502).json({ message: "Unable to reach the payment provider. Please try again." })

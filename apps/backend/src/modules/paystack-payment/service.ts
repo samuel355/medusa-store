@@ -54,15 +54,22 @@ export default class PaystackPaymentService extends AbstractPaymentProvider<Pays
     this.fetch_ = fetcher
   }
 
-  // Paystack's top-level `status` boolean means "this endpoint call is
-  // conclusively successful" for /transaction/initialize and
-  // /transaction/verify - but for /charge it can legitimately be `false`
-  // (with a message like "Charge attempted") while a perfectly normal,
-  // in-progress charge is represented by `data.status`
-  // (send_otp/pending/pay_offline/...). The proven legacy implementation
-  // (src/lib/integrations/paystack.ts) never checked the top-level boolean
-  // at all, only response.ok - callers that pass requireSuccessFlag: false
-  // mirror that and rely on `data` (and its own `.status` field) instead.
+  // For /transaction/initialize and /transaction/verify, a non-2xx response
+  // or a top-level `status: false` both mean "this call failed" - and
+  // payload.message is a real, useful description.
+  //
+  // /charge (Direct Charge) doesn't follow that contract at all (confirmed
+  // against the live Paystack sandbox): it can respond with HTTP 400 *and*
+  // `status: false` for a perfectly normal outcome, and payload.message is
+  // always the same fixed, generic "Charge attempted" regardless of whether
+  // the charge succeeded, is still pending, or was conclusively declined.
+  // The real state lives on the nested transaction (data.status /
+  // data.message). Callers pass requireSuccessFlag: false for this
+  // endpoint, matching the proven legacy implementation
+  // (src/lib/integrations/paystack.ts), which never looked at response.ok
+  // or the top-level boolean here - only a missing/null `data` (no
+  // transaction to reason about at all) counts as a request-level failure;
+  // initiatePayment's own .then() decides pass/fail from the transaction.
   private async request<T>(operation: string, path: string, init?: RequestInit, options?: { requireSuccessFlag?: boolean }): Promise<T> {
     try {
       const response = await this.fetch_(`${this.baseUrl_}${path}`, {
@@ -71,7 +78,8 @@ export default class PaystackPaymentService extends AbstractPaymentProvider<Pays
       })
       const payload = await response.json() as PaystackResponse<T>
       const requireSuccessFlag = options?.requireSuccessFlag ?? true
-      if (!response.ok || payload.data === undefined || payload.data === null || (requireSuccessFlag && !payload.status)) {
+      const hasData = payload.data !== undefined && payload.data !== null
+      if (requireSuccessFlag ? (!response.ok || !payload.status) : !hasData) {
         throw new Error(payload.message || `HTTP ${response.status}`)
       }
       return payload.data
@@ -111,7 +119,20 @@ export default class PaystackPaymentService extends AbstractPaymentProvider<Pays
             mobile_money: { phone: mobileMoney!.phone, provider: mobileMoney!.provider },
             metadata: { ...(input.data?.metadata as object ?? {}), medusa_session_id: sessionId },
           }),
-        }, { requireSuccessFlag: false })
+        }, { requireSuccessFlag: false }).then((transaction) => {
+          // Paystack's top-level response `message` for /charge is a fixed,
+          // generic "Charge attempted" on every outcome, success or failure -
+          // it's never useful to show a customer. The real, human-readable
+          // reason (e.g. "Declined. Please use the test mobile money
+          // number...", or an insufficient-funds message) lives on
+          // transaction.message, and only matters once the charge has
+          // conclusively failed - send_otp/pending/pay_offline/success and
+          // everything else should proceed to the next checkout step.
+          if (transaction.status === "failed" || transaction.status === "abandoned") {
+            throw new PaystackProviderError("charge", transaction.message || "Your mobile money payment could not be completed.")
+          }
+          return transaction
+        })
       : this.request<PaystackTransaction>("initialize", "/transaction/initialize", {
           method: "POST",
           body: JSON.stringify({

@@ -16,7 +16,11 @@ export type PaystackTransaction = {
   access_code?: string
   authorization_url?: string
   // Direct Charge (/charge, /charge/submit_otp) response fields - absent on
-  // Standard Checkout (/transaction/initialize) responses.
+  // Standard Checkout (/transaction/initialize) responses. `message` here is
+  // per-transaction (e.g. a decline reason) - distinct from
+  // PaystackResponse.message, which for /charge is always the fixed,
+  // generic string "Charge attempted" regardless of outcome.
   display_text?: string
+  message?: string
   metadata?: Record<string, unknown>
 }

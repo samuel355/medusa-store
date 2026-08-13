@@ -35,14 +35,16 @@ describe("PaystackPaymentService", () => {
     expect(body).toMatchObject({ amount: 5500, currency: "GHS", mobile_money: { provider: "mtn", phone: "0240000000" }, metadata: { medusa_session_id: "payses_mm" } })
   })
 
-  test("treats a mobile money charge as pending, not failed, when Paystack answers status:false with a usable data payload", async () => {
-    // Regression: live Paystack /charge responses for Ghana mobile money can
-    // come back HTTP 200 with the top-level `status: false` and
-    // message: "Charge attempted" while the charge is still genuinely in
-    // progress (data.status carries the real state) - the same as the
-    // proven legacy implementation (src/lib/integrations/paystack.ts) always
-    // treated this endpoint. Treating `status: false` here as a hard failure
-    // broke every live mobile money charge.
+  test("treats a mobile money charge as pending, not failed, when Paystack answers status:false with a non-terminal data.status", async () => {
+    // Regression: live Paystack /charge responses for Ghana mobile money
+    // come back HTTP 200/400 with the top-level `status: false` and a fixed,
+    // generic message: "Charge attempted" for *every* outcome (confirmed
+    // against the live sandbox) - the real state lives in data.status. Only
+    // a conclusive "failed"/"abandoned" data.status should stop checkout;
+    // anything else (send_otp/pending/pay_offline/...) must proceed to the
+    // next step, matching the proven legacy implementation
+    // (src/lib/integrations/paystack.ts), which never looked at the
+    // top-level boolean for this endpoint at all.
     const fetcher = jest.fn().mockImplementation(() =>
       Promise.resolve(new Response(JSON.stringify({
         status: false, message: "Charge attempted",
@@ -58,14 +60,21 @@ describe("PaystackPaymentService", () => {
     expect((result.data as Record<string, unknown>).status).toBe("send_otp")
   })
 
-  test("still fails a mobile money charge on a genuine HTTP-level error or a missing data payload", async () => {
-    const fetcher = jest.fn().mockResolvedValue(new Response(JSON.stringify({ status: false, message: "invalid phone number", data: null }), { status: 200 }))
+  test("fails a mobile money charge with the real decline reason, not Paystack's generic top-level message", async () => {
+    // Verified against the live sandbox: a declined /charge responds with
+    // top-level message "Charge attempted" (useless) on every outcome, and
+    // the actual reason lives on data.message, e.g. "Declined. Please use
+    // the test mobile money number since you are doing a test transaction."
+    const fetcher = jest.fn().mockResolvedValue(new Response(JSON.stringify({
+      status: false, message: "Charge attempted",
+      data: { reference: "ref_bad", status: "failed", message: "Declined. Please use the test mobile money number since you are doing a test transaction." },
+    }), { status: 400 }))
     const service = new PaystackPaymentService({}, { secretKey }, fetcher)
     await expect(service.initiatePayment({
       amount: 55, currency_code: "ghs",
       data: { email: "buyer@example.com", channels: ["mobile_money"], mobile_money: { provider: "mtn", phone: "0240000000" } },
       context: { idempotency_key: "payses_bad" },
-    })).rejects.toThrow(/invalid phone number/)
+    })).rejects.toThrow(/Declined\. Please use the test mobile money number/)
   })
 
   test("falls back to Standard Checkout for mobile money without a network/number, or a mixed-channel request", async () => {
