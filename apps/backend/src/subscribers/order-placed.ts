@@ -14,7 +14,7 @@ export default async function orderPlacedHandler({ event, container }: OrderPlac
   const { data: orders } = await query.graph({
     entity: "order",
     fields: [
-      "id", "display_id", "custom_display_id", "email", "currency_code", "total", "subtotal", "shipping_total",
+      "id", "display_id", "custom_display_id", "email", "currency_code", "total", "subtotal", "shipping_total", "discount_total",
       "shipping_address.phone", "shipping_address.first_name",
       "items.title", "items.quantity", "items.unit_price", "items.total", "items.thumbnail",
     ],
@@ -25,8 +25,6 @@ export default async function orderPlacedHandler({ event, container }: OrderPlac
 
   const customerName = order.shipping_address?.first_name || "there"
   const currencyCode = order.currency_code ?? "GHS"
-  const orderTotal = toAmount(order.total)
-  const total = money(orderTotal, currencyCode)
   // completeCartWorkflow emits order.placed *before* the orderCreated hook
   // that normally sets custom_display_id (see order-number.ts) - without
   // this, the SMS/email would race that hook and usually lose, showing
@@ -53,16 +51,27 @@ export default async function orderPlacedHandler({ event, container }: OrderPlac
     }
   })
 
+  const itemsSubtotal = items.reduce((sum, item) => sum + item.total, 0)
+  const shipping = toAmount(order.shipping_total)
+  const discount = toAmount(order.discount_total)
+  // order.total (and order.subtotal) can still be mid-computation this early
+  // in completeCartWorkflow - order.placed fires before the workflow's later
+  // totals-aggregation steps, and a stale/partial total (observed: exactly
+  // the shipping fee, as if items hadn't been folded in yet) undercharges
+  // what the customer/admin are told they got. Trust whichever is larger:
+  // Medusa's own total should only ever be >= what's independently verifiable
+  // from the line items and shipping fee (e.g. + tax), never less.
+  const orderTotal = Math.max(toAmount(order.total), Math.max(0, itemsSubtotal + shipping - discount))
+  const subtotal = Math.max(toAmount(order.subtotal), itemsSubtotal)
+  const total = money(orderTotal, currencyCode)
+
   const customerEmailHtml = renderEmailShell({
     preheader: `Your Begnon order ${orderRef} for ${total} has been placed.`,
     heading: `Thanks, ${customerName}! Your order is confirmed.`,
     intro: `Order ${orderRef} has been placed. We'll email you again as soon as it ships.`,
     bodyHtml:
       renderItemsTable(items, currencyCode) +
-      renderOrderSummary(
-        { subtotal: toAmount(order.subtotal), shipping: toAmount(order.shipping_total), total: orderTotal },
-        currencyCode,
-      ) +
+      renderOrderSummary({ subtotal, shipping, total: orderTotal }, currencyCode) +
       renderCtaButton("Track your order", `${storeUrl}/tracking?order=${encodeURIComponent(order.id)}`),
   })
 
@@ -72,10 +81,7 @@ export default async function orderPlacedHandler({ event, container }: OrderPlac
     intro: `Order ${orderRef} worth ${total} just came in. Here's the quick view — open the dashboard for fulfillment and payment details.`,
     bodyHtml:
       renderItemsTable(items, currencyCode) +
-      renderOrderSummary(
-        { subtotal: toAmount(order.subtotal), shipping: toAmount(order.shipping_total), total: orderTotal },
-        currencyCode,
-      ) +
+      renderOrderSummary({ subtotal, shipping, total: orderTotal }, currencyCode) +
       renderCtaButton("Open dashboard", `${storeUrl}/admin`),
   })
 

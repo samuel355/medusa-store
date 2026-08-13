@@ -11,7 +11,7 @@ export type CheckoutSdkBoundary = {
     complete(id: string): Promise<HttpTypes.StoreCompleteCartResponse>;
   };
   fulfillment: {
-    listCartOptions(query: { cart_id: string }): Promise<HttpTypes.StoreShippingOptionListResponse>;
+    listCartOptions(query: { cart_id: string; fields?: string }): Promise<HttpTypes.StoreShippingOptionListResponse>;
   };
   payment: {
     initiatePaymentSession(cart: HttpTypes.StoreCart, body: HttpTypes.StoreInitializePaymentSession, query?: { fields: string }): Promise<HttpTypes.StorePaymentCollectionResponse>;
@@ -52,7 +52,11 @@ export function createCheckoutService(sdk: CheckoutSdkBoundary) {
         email: details.email.trim(),
         shipping_address: { first_name: firstName, last_name: rest.join(" ") || "Customer", phone: details.phone.trim(), address_1: details.address.trim(), city, country_code: "gh" },
       }, CART_FIELDS);
-      const { shipping_options: options } = await sdk.fulfillment.listCartOptions({ cart_id: addressed.id });
+      // The store API's default field set for shipping options omits the
+      // `type` relation entirely (only the raw shipping_option_type_id FK) -
+      // without this, option.type is always undefined and pickShippingOption
+      // silently falls back to options[0] every time, regardless of city.
+      const { shipping_options: options } = await sdk.fulfillment.listCartOptions({ cart_id: addressed.id, fields: "+type.code" });
       if (!options.length) throw new MedusaCheckoutError("select shipping", "No delivery option is configured for this Ghana cart.");
       const option = pickShippingOption(options, city);
       const existing = addressed.shipping_methods?.[0];

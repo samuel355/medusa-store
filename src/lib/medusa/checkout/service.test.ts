@@ -21,6 +21,19 @@ test("prepares Ghana address and chooses a real shipping option", async () => {
   assert.deepEqual(calls, ["address:gh", "shipping:so_1"]);
 });
 
+test("requests the type.code field explicitly - the store API's default field set omits it", async () => {
+  // Regression test: without this, option.type is always undefined and
+  // pickShippingOption silently falls back to options[0] for every city.
+  let receivedQuery: unknown;
+  const sdk = { cart: {
+    update: async () => ({ cart }),
+    retrieve: async () => ({ cart }),
+    addShippingMethod: async () => ({ cart: { ...cart, shipping_methods: [{ id: "sm_1", shipping_option_id: "so_accra" }] } }),
+  }, fulfillment: { listCartOptions: async (query: unknown) => { receivedQuery = query; return { shipping_options: GHANA_OPTIONS }; } }, payment: {} } as never;
+  await createCheckoutService(sdk).prepare("cart_1", { email: "buyer@example.com", phone: "+233", address: "12 Ring Rd", city: "Accra", displayName: "Ama Owusu" });
+  assert.match((receivedQuery as { fields?: string }).fields ?? "", /type\.code/);
+});
+
 test("Accra and Kumasi deliveries get different shipping options, not the same flat fee", async () => {
   async function prepareFor(city: string) {
     const calls: string[] = [];
